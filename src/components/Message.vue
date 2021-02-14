@@ -16,12 +16,17 @@ export default {
         badge: String,
         color: String,
     },
+    methods: {
+        syncAnimations: function() {
+            console.log("syncing animations");
+        },
+    },
     data() {
     
     },
     created() {
-        sync("rainbow-text");
-    }
+        (new sync("rainbow-text")).start();
+    },
 }
 </script>
 

@@ -1,8 +1,8 @@
 <template>
     <div ref="popupContainer" class="popup-container">
-        <div class="message-list-container">
+        <div ref="messageListContainer" class="message-list-container">
             <ul>
-                <Message author="System">{{ clientAuthor }} (PeerID {{ clientID }})</Message>
+                <Message ref="infoMessage" author="System">{{ clientAuthor }} (PeerID {{ clientID }})</Message>
                 <Message v-for="(message, index) in messages" :key="index" :author="message.author" :badge="message.badge">
                     {{ message.content }}
                 </Message>
@@ -13,10 +13,7 @@
 </template>
 
 <script>
-import Peer from "peerjs";
 import Message from "./Message";
-
-var peer, connection = undefined;
 
 export default {
     components: {
@@ -25,14 +22,12 @@ export default {
     data() {
         return {
             isFocused: false,
-            clientAuthor: undefined,
+            clientAuthor: "MODERATOR STANCE",
             clientColor: "#ff4a50",
             clientBadge: undefined,
             clientID: undefined,
             messages: [],
 
-            peer: {}, // object
-            connections: {},
         }
     },
     methods: {
@@ -46,6 +41,8 @@ export default {
                 scope.$refs.messageBox.focus();
             }
 
+            scope.$refs.messageListContainer.scrollTop = scope.$refs.messageListContainer.scrollHeight;
+
             scope.isFocused = !scope.isFocused;
         },
         onEnter: function(e) {
@@ -56,11 +53,7 @@ export default {
                 this.systemMessage(message);
             } else if (/\S/.test(text)) {
                 this.pushMessage(this.clientAuthor, this.clientBadge, text);
-
-                if (connection != undefined) {
-                    connection.send( this.stringifyMsgData(
-                        this.clientAuthor, this.clientBadge, text));
-                }
+                this.$emit("broadcast", { data: this.stringifyMsgData(this.clientAuthor, this.clientBadge, text) })
             }
 
             e.target.value = "";
@@ -71,6 +64,8 @@ export default {
                 badge: badge,
                 content: text
             });
+
+            this.$refs.infoMessage.syncAnimations(); // infoMessage is a single message containing info, and the chat will always contain this message.
         },
         systemMessage: function(text) {
             this.pushMessage("System", undefined, text);
@@ -79,19 +74,7 @@ export default {
             switch (args[0]) {
                 case "!#connect":
                     if (args.length < 2) return this.assertArgCount(args, 1);
-                    connection = peer.connect(args[1]);
-                    connection.on("open", () => {
-                        const data = JSON.stringify({
-                            type: "message",
-                            body: {
-                                author: "System",
-                                badge: undefined,
-                                content: `${this.clientAuthor} has joined`,
-                            }
-                        });
-
-                        connection.send(data);
-                    });
+                    this.$emit("connect-to-peer", { id: args[1] });
                     break;
                 case "!#setname":
                     if (args.length < 2) return this.assertArgCount(args, 1);
@@ -114,42 +97,9 @@ export default {
         assertArgCount: function(args, length) {
             return `${args[0]} expected ${length} arguments (got ${args.length - 1})`;
         },
-        generateHex: function(length) {
-            return [...Array(length)].map(() => Math.floor(Math.random() * 16).toString(16)).join("");
-        },
-
-        // P2P CONNECTIONS
-
-        createPeer: function() {
-            this.peer = new Peer("ASTREAM_" + this.generateHex(16));
-
-            peer.on("connection", (conn) => {
-                if (!this.connections[conn.peer.id]) {
-                    this.configureConnection(conn);
-                }
-
-                conn.on("data", (data) => {
-                    data = JSON.parse(data);
-
-                    if (data.type == "message") {
-                        this.pushMessage(data.body.author, data.body.badge, data.body.content);
-                    }
-                });
-            });
-        },
-        connectToPeer: function() {
-            
-        },
-        configureConnection: function(conn) {
-            conn.on("data")
-        }
     },
     mounted() {
         const _this = this;
-
-        this.createPeer();
-
-        this.clientID = peer.id;
 
         document.onkeyup = function(e) {
             if (e.key == "Enter") {

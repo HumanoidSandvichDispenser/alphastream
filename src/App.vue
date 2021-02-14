@@ -10,17 +10,91 @@
             @keyup.enter="this.$refs.chat.focus()"
         ></iframe>
         <div class="fullscreen"></div>
-        <Chat ref="chat" />
+        <Chat ref="chat" @broadcast="broadcast($event.data)" @connect-to-peer="connectToPeer($event.id)"/>
     </div>
 </template>
 
 <script>
+import Peer from "peerjs";
 import Chat from "./components/Chat";
 
 export default {
     name: "App",
     components: {
         Chat,
+    },
+    data() {
+        return {
+            peer: {}, // object
+            connections: {},
+        }
+    },
+    methods: {
+        generateHex: function(length) {
+            return [...Array(length)].map(() => Math.floor(Math.random() * 16).toString(16)).join("");
+        },
+        createPeer: function() {
+            const id = "ASTREAM_" + this.generateHex(16);
+            this.peer = new Peer(id);
+
+            this.peer.on("connection", (conn) => {
+                conn.on("data", (data) => {
+                    this.receive(data);
+                });
+            });
+
+            return id;
+        },
+        connectToPeer: function(id, connectBack=true) {
+            this.connections[id] = this.peer.connect(id);
+            this.connections[id].on("open", () => {
+                console.log("Connected to " + id);
+
+                const data = JSON.stringify({
+                    type: "message",
+                    body: {
+                        author: "System",
+                        badge: undefined,
+                        content: `${this.$refs.chat.clientAuthor} has joined`,
+                    }
+                });
+                this.connections[id].send(data);
+                if (connectBack) {
+                    this.signalConnectBack(id);
+                }
+            });
+        },
+        configureConnection: function(conn) {
+            conn.on("data")
+        },
+        signalConnectBack: function(id) {
+            this.connections[id].send(JSON.stringify({
+                type: "connectBack",
+                body: this.peer.id,
+            }))
+        },
+        broadcast: function(data, ids=undefined) {
+            console.log("Broadcasting data");
+            Object.keys(this.connections)
+                .filter(x => ids == undefined || ids.includes(x)) // filter if ids is specified
+                .forEach((id) => { this.connections[id].send(data); });
+        },
+        receive: function(data) {
+            data = JSON.parse(data);
+
+            if (data.type == "message") {
+                this.$refs.chat.pushMessage(data.body.author, data.body.badge, data.body.content);
+                console.log("received message: " + data.body.content);
+
+            } else if (data.type == "connectBack") {
+                console.log("Received connection and connecting back to " + data.body);
+                this.connectToPeer(data.body, false);
+            }
+        }
+    },
+    mounted() {
+        this.$refs.chat.clientID = this.createPeer();
+        console.log("Got ID: " + this.$refs.chat.clientID);
     },
 };
 </script>
