@@ -72,14 +72,17 @@ export default {
         },
         parseCommand: function(args) {
             switch (args[0]) {
-                case "!#connect":
+                case "!#connect": {
                     if (args.length < 2) return this.assertArgCount(args, 1);
                     this.$emit("connect-to-peer", { id: args[1] });
-                    break;
-                case "!#setname":
+                    return `Connecting to ${args[1]}...`;
+                }
+                case "!#setname": {
                     if (args.length < 2) return this.assertArgCount(args, 1);
+                    const oldName = this.clientAuthor;
                     this.clientAuthor = args[1];
-                    break;
+                    return `Changed name from ${oldName} to ${args[1]}`;
+                }
                 default:
                     return `Unknown command ${args[0]}`;
             }

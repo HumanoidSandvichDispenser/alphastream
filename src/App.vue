@@ -45,7 +45,9 @@ export default {
 
             return id;
         },
-        connectToPeer: function(id, connectBack=true) {
+        connectToPeer: function(id, mergeConnections=false, connectBack=true) {
+            if (this.connections[id]) return;
+
             this.connections[id] = this.peer.connect(id);
             this.connections[id].on("open", () => {
                 console.log("Connected to " + id);
@@ -59,6 +61,13 @@ export default {
                     }
                 });
                 this.connections[id].send(data);
+                
+                if (mergeConnections) {
+                    this.broadcast(JSON.stringify({
+                        type: "mergeConnections",
+                        body: Object.keys(this.connections), // broadcast IDs back so clients can later connect to them
+                    }), [ id ]);
+                }
                 if (connectBack) {
                     this.signalConnectBack(id);
                 }
@@ -68,10 +77,10 @@ export default {
             conn.on("data")
         },
         signalConnectBack: function(id) {
-            this.connections[id].send(JSON.stringify({
+            this.broadcast(JSON.stringify({
                 type: "connectBack",
                 body: this.peer.id,
-            }))
+            }), [ id ])
         },
         broadcast: function(data, ids=undefined) {
             console.log("Broadcasting data");
@@ -88,7 +97,12 @@ export default {
 
             } else if (data.type == "connectBack") {
                 console.log("Received connection and connecting back to " + data.body);
-                this.connectToPeer(data.body, false);
+                this.connectToPeer(data.body, true, false);
+            } else if (data.type == "mergeConnections") {
+                console.log("Merging connection with IDS: " + data.body.join(", "));
+                data.body.forEach((id) => this.connectToPeer(id));
+            } else if (data.type == "nameChange") {
+                console.log(`${data.body.oldName} changed their name to ${data.body.newName}`);
             }
         }
     },

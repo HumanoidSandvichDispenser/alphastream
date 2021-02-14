@@ -64,7 +64,7 @@ export default {
 }
 
 .rainbow {
-    animation: rainbow-text 2s infinite!important;
+    animation: rainbow-text 5s infinite!important;
 }
 
 @keyframes rainbow-text {
