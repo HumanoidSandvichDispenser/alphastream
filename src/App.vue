@@ -46,7 +46,7 @@ export default {
             return id;
         },
         connectToPeer: function(id, mergeConnections=false, connectBack=true) {
-            if (this.connections[id]) return;
+            if (this.connections[id] || id == this.peer.id) return;
 
             this.connections[id] = this.peer.connect(id);
             this.connections[id].on("open", () => {
