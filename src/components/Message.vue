@@ -1,13 +1,36 @@
 <template>
     <li class="message-container">
-        <div class="rainbow message-author"><img v-if="badge != undefined" :src="badge">{{ author }}</div>
+        <div class="message-author"><img v-if="badge != undefined" :src="badge">{{ author }}</div>
         <div class="message-timestamp">{{ timestamp }}</div>
-        <div class="message-content"><slot></slot></div>
+        <div ref="messageContent" class="message-content" v-html="parseEmotes(content)"></div>
     </li>
 </template>
 
 <script>
-import sync from "css-animation-sync";
+const { EmoteFetcher } = require("@mkody/twitch-emoticons");
+
+var emoteMap = new Map();
+var globalMap = new Map();
+var BTTVMap = new Map();
+var FFZMap = new Map();
+
+const fetcher = new EmoteFetcher();
+
+fetcher.fetchTwitchEmotes(null).then(() => {
+    globalMap = new Map([...fetcher.emotes]);
+
+    fetcher.fetchBTTVEmotes(71092938).then(() => {
+        BTTVMap = fetcher.emotes;
+        console.log("BTTV Emotes");
+        console.log(BTTVMap);
+
+        fetcher.fetchFFZEmotes(71092938).then(() => {
+            FFZMap = fetcher.emotes;
+            emoteMap = new Map([...globalMap,...BTTVMap,...FFZMap]);
+            console.log(emoteMap);
+        });
+    });
+});
 
 export default {
     props: {
@@ -15,17 +38,39 @@ export default {
         timestamp: String,
         badge: String,
         color: String,
+        content: String, // use props instead of slots to use and access content data
     },
     methods: {
         syncAnimations: function() {
             console.log("syncing animations");
         },
+        parseEmotes(message) {
+            const words = message.split(" ");
+            words.forEach((word, index) => {
+                if (emoteMap.has(word)) {
+                    console.log("found emote");
+                    words[index] = `<img class="emote" src="${emoteMap.get(word).toLink()}">`; // replace text with image of emote
+                }
+            });
+
+            return words.join(" ");
+        },
     },
     data() {
-    
+        
     },
-    created() {
-        (new sync("rainbow-text")).start();
+    updated() {
+        //console.log("created message element");
+        /*
+        const words = this.$refs.messageContent.innerHTML.split(" ");
+        words.forEach((word, index) => {
+            if (emoteMap.has(word)) {
+                console.log("found emote");
+                words[index] = `<img class="emote" src="${emoteMap.get(word).toLink()}">`;
+            }
+        });
+
+        this.$refs.messageContent.innerHTML = words.join(" ");*/
     },
 }
 </script>
@@ -56,15 +101,22 @@ export default {
 }
 
 .message-author {
+    color: palegreen;
     font-weight: 600;
 }
 
 .message-content {
+    vertical-align: middle;
     font-weight: 400;
 }
 
+.emote {
+    transform: translateY(2px);
+}
+
 .rainbow {
-    animation: rainbow-text 5s infinite!important;
+    color: rgb(236, 84, 84);
+    animation: rainbow-text 4s infinite;
 }
 
 @keyframes rainbow-text {
@@ -74,5 +126,12 @@ export default {
     60% { color:  rgb(96, 128, 244); }
     80% { color:  rgb(240, 64, 208); }
     100% { color: rgb(236, 84, 84); }
+    /*
+    0% { color: orange; }
+    25% { color: salmon; }
+    50% { color: palevioletred; }
+    75% { color: salmon; }
+    100% { color: orange; }
+    */
 }
 </style>

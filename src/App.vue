@@ -17,6 +17,9 @@
 <script>
 import Peer from "peerjs";
 import Chat from "./components/Chat";
+import sync from "css-animation-sync";
+
+sync("rainbow-text", {graceful: false});
 
 export default {
     name: "App",

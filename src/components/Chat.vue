@@ -2,10 +2,8 @@
     <div ref="popupContainer" class="popup-container">
         <div ref="messageListContainer" class="message-list-container">
             <ul>
-                <Message ref="infoMessage" author="System">{{ clientAuthor }} (PeerID {{ clientID }})</Message>
-                <Message v-for="(message, index) in messages" :key="index" :author="message.author" :badge="message.badge">
-                    {{ message.content }}
-                </Message>
+                <Message ref="infoMessage" author="System" :content="`${clientAuthor} (PeerID ${clientID})`"/>
+                <Message v-for="(message, index) in messages" :key="index" :author="message.author" :badge="message.badge" :content="message.content"/>
             </ul>
         </div>
         <input ref="messageBox" placeholder="Message or link" @keyup.enter="onEnter($event)">
