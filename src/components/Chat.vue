@@ -1,5 +1,5 @@
 <template>
-    <div ref="popupContainer" class="popup-container">
+    <div ref="popupContainer" class="popup-container chat-container">
         <div ref="messageListContainer" class="message-list-container">
             <ul>
                 <Message ref="infoMessage" author="System" :content="`${clientAuthor} (PeerID ${clientID})`"/>
@@ -13,6 +13,8 @@
 <script>
 import Message from "./Message";
 
+const localStorage = window.localStorage;
+
 export default {
     components: {
         Message,
@@ -20,7 +22,7 @@ export default {
     data() {
         return {
             isFocused: false,
-            clientAuthor: "MODERATOR STANCE",
+            clientAuthor: undefined,
             clientColor: "#ff4a50",
             clientBadge: undefined,
             clientID: undefined,
@@ -30,18 +32,22 @@ export default {
     },
     methods: {
         focus: function(scope) {
+            if (scope == undefined) return;
+
             const popupContainer = scope.$refs.popupContainer;
 
-            if (scope.isFocused) {
-                popupContainer.classList.remove("focused");
-            } else {
-                popupContainer.classList.add("focused");
-                scope.$refs.messageBox.focus();
+            if (popupContainer != undefined) {
+                if (scope.isFocused) {
+                    popupContainer.classList.remove("focused");
+                } else {
+                    popupContainer.classList.add("focused");
+                    scope.$refs.messageBox.focus();
+                }
+
+                scope.$refs.messageListContainer.scrollTop = scope.$refs.messageListContainer.scrollHeight;
+
+                scope.isFocused = !scope.isFocused;
             }
-
-            scope.$refs.messageListContainer.scrollTop = scope.$refs.messageListContainer.scrollHeight;
-
-            scope.isFocused = !scope.isFocused;
         },
         onEnter: function(e) {
             const text = e.target.value;
@@ -79,7 +85,24 @@ export default {
                     if (args.length < 2) return this.assertArgCount(args, 1);
                     const oldName = this.clientAuthor;
                     this.clientAuthor = args[1];
+                    localStorage.setItem("username", args[1]);
+                    this.$emit("broadcast", {
+                        data: JSON.stringify({
+                            type: "nameChange",
+                            body: {
+                                oldName: oldName,
+                                newName: args[1]
+                            }
+                    })});
                     return `Changed name from ${oldName} to ${args[1]}`;
+                }
+                case "!#ping": {
+                    break;
+                }
+                case "!#clear": {
+                    while (this.messages.length)
+                        this.messages.pop();
+                    break;
                 }
                 default:
                     return `Unknown command ${args[0]}`;
@@ -114,15 +137,19 @@ export default {
 <style>
 .popup-container {
     position: fixed;
+    border-radius: 4px;
+    transition-duration: 200ms;
+}
+
+.chat-container {
     bottom: 48px;
     left: 48px;
     float: left;
     vertical-align: bottom;
     background-color: transparent;
-    height: 300px;
-    width: 400px;
-    border-radius: 4px;
-    transition-duration: 200ms;
+    min-height: 300px;
+    height: 50%;
+    width: 450px;
 }
 
 .popup-container.focused {
@@ -138,7 +165,7 @@ export default {
 .message-list-container {
     overflow-y: auto;
     overflow-x: hidden;
-    height: 252px;
+    height: calc(100% - 48px);
 }
 
 .popup-container ul {
@@ -158,7 +185,7 @@ export default {
     float: left;
     margin: 8px;
     padding: 8px;
-    width: 368px;
+    width: 418px;
     font-size: 16px;
     word-wrap: break-word;
 }

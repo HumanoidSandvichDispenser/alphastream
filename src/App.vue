@@ -21,6 +21,8 @@ import sync from "css-animation-sync";
 
 sync("rainbow-text", {graceful: false});
 
+const localStorage = window.localStorage;
+
 export default {
     name: "App",
     components: {
@@ -86,6 +88,11 @@ export default {
             }), [ id ])
         },
         broadcast: function(data, ids=undefined) {
+            if (this.peer.disconnected) {
+                console.log("You have been disconnected and can not broadcast any messages.");
+                return;
+            }
+
             console.log("Broadcasting data");
             Object.keys(this.connections)
                 .filter(x => ids == undefined || ids.includes(x)) // filter if ids is specified
@@ -105,18 +112,24 @@ export default {
                 console.log("Merging connection with IDS: " + data.body.join(", "));
                 data.body.forEach((id) => this.connectToPeer(id));
             } else if (data.type == "nameChange") {
-                console.log(`${data.body.oldName} changed their name to ${data.body.newName}`);
+                const message = `${data.body.oldName} changed their name to ${data.body.newName}`;
+                console.log(message);
+                this.$refs.chat.systemMessage(message);
             }
         }
     },
     mounted() {
         this.$refs.chat.clientID = this.createPeer();
         console.log("Got ID: " + this.$refs.chat.clientID);
+
+        const username = localStorage.username;
+        this.$refs.chat.clientAuthor = username ? username : "Alphastreamer";
     },
 };
 </script>
 
 <style>
+
 body {
     background: black;
     margin: 0;

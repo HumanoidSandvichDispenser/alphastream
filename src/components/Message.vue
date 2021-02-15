@@ -1,8 +1,8 @@
 <template>
     <li class="message-container">
-        <div class="message-author"><img v-if="badge != undefined" :src="badge">{{ author }}</div>
+        <div class="message-author"><img v-if="badge != undefined" class="message-content" :src="badge">{{ author }}</div>
         <div class="message-timestamp">{{ timestamp }}</div>
-        <div ref="messageContent" class="message-content" v-html="parseEmotes(content)"></div>
+        <span ref="messageContent" class="message-content" v-html="parseEmotes(content)"></span>
     </li>
 </template>
 
@@ -16,10 +16,10 @@ var FFZMap = new Map();
 
 const fetcher = new EmoteFetcher();
 
-fetcher.fetchTwitchEmotes(null).then(() => {
+fetcher.fetchTwitchEmotes(71092938).then(() => {
     globalMap = new Map([...fetcher.emotes]);
 
-    fetcher.fetchBTTVEmotes(71092938).then(() => {
+    fetcher.fetchBTTVEmotes(71092938).then(() => { // fetch emotes in ordere to make sure they are added correctly
         BTTVMap = fetcher.emotes;
         console.log("BTTV Emotes");
         console.log(BTTVMap);
@@ -49,28 +49,12 @@ export default {
             words.forEach((word, index) => {
                 if (emoteMap.has(word)) {
                     console.log("found emote");
-                    words[index] = `<img class="emote" src="${emoteMap.get(word).toLink()}">`; // replace text with image of emote
+                    words[index] = `<img class="emote" alt="${word}" src="${emoteMap.get(word).toLink()}">`; // replace text with image of emote
                 }
             });
 
             return words.join(" ");
         },
-    },
-    data() {
-        
-    },
-    updated() {
-        //console.log("created message element");
-        /*
-        const words = this.$refs.messageContent.innerHTML.split(" ");
-        words.forEach((word, index) => {
-            if (emoteMap.has(word)) {
-                console.log("found emote");
-                words[index] = `<img class="emote" src="${emoteMap.get(word).toLink()}">`;
-            }
-        });
-
-        this.$refs.messageContent.innerHTML = words.join(" ");*/
     },
 }
 </script>
@@ -95,9 +79,8 @@ export default {
     line-height: 24px;
 }
 
-.message-container > * > img {
+.message-container > .message-author > img {
     transform: translateY(4px);
-    margin-right: 4px;
 }
 
 .message-author {
@@ -106,12 +89,14 @@ export default {
 }
 
 .message-content {
-    vertical-align: middle;
     font-weight: 400;
 }
 
 .emote {
-    transform: translateY(2px);
+    transform: translateY(-4px);
+    vertical-align: middle;
+    max-height: 32px;
+    margin-top: 2px;
 }
 
 .rainbow {
