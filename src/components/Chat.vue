@@ -124,6 +124,15 @@ export default {
                     return `Changed name from ${oldName} to ${args[1]}`;
                 }
                 case "!#ping": {
+                    this.$emit("broadcast", {
+                        data: {
+                            type: "ping",
+                            sender: this.clientID,
+                            body: {
+                                time: new Date().getTime(),
+                            }
+                        }
+                    });
                     break;
                 }
                 case "!#clear": {

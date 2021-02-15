@@ -139,6 +139,18 @@ export default {
                 console.log(message);
                 this.$refs.chat.systemMessage(message);
                 this.connections[data.sender].username = data.body.newName;
+            } else if (data.type == "ping") {
+                const latency = new Date().getTime() - data.body.time;
+                this.broadcast({
+                    type: "pong",
+                    sender: this.peer.id,
+                    body: {
+                        latency: latency
+                    }
+                }, data.sender);
+            } else if (data.type == "pong") {
+                const latency = data.body.latency; // time it took for peers to receive message
+                this.$refs.chat.systemMessage(`${this.connections[data.sender].username}: ${latency} ms`);
             }
         }
     },
