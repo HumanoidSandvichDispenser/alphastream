@@ -10,24 +10,15 @@
 const { EmoteFetcher } = require("@mkody/twitch-emoticons");
 
 var emoteMap = new Map();
-var globalMap = new Map();
-var BTTVMap = new Map();
-var FFZMap = new Map();
 
 const fetcher = new EmoteFetcher();
 
 fetcher.fetchTwitchEmotes(71092938).then(() => {
-    globalMap = new Map([...fetcher.emotes]);
-
+    emoteMap = new Map([...fetcher.emotes]);
     fetcher.fetchBTTVEmotes(71092938).then(() => { // fetch emotes in ordere to make sure they are added correctly
-        BTTVMap = fetcher.emotes;
-        console.log("BTTV Emotes");
-        console.log(BTTVMap);
-
+        emoteMap = new Map([...fetcher.emotes]);
         fetcher.fetchFFZEmotes(71092938).then(() => {
-            FFZMap = fetcher.emotes;
-            emoteMap = new Map([...globalMap,...BTTVMap,...FFZMap]);
-            console.log(emoteMap);
+            emoteMap = new Map([...fetcher.emotes]);
         });
     });
 });

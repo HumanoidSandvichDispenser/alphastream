@@ -1,5 +1,12 @@
 <template>
     <div ref="popupContainer" class="popup-container chat-container">
+        <div ref="memberListContainer" class="member-list-container">
+            <ul>
+                <li style="padding: 4px; user-select: none;">&#9662; Members</li>
+                <Member :member="clientAuthor" :badge="clientBadge"/>
+                <Member v-for="(client, id) in connections" :key="id" :member="client.username"/>
+            </ul>
+        </div>
         <div ref="messageListContainer" class="message-list-container">
             <ul>
                 <Message ref="infoMessage" author="System" :content="`${clientAuthor} (PeerID ${clientID})`"/>
@@ -12,12 +19,17 @@
 
 <script>
 import Message from "./Message";
+import Member from "./Member";
 
 const localStorage = window.localStorage;
 
 export default {
     components: {
         Message,
+        Member
+    },
+    props: {
+        connections: {},
     },
     data() {
         return {
@@ -27,7 +39,6 @@ export default {
             clientBadge: undefined,
             clientID: undefined,
             messages: [],
-
         }
     },
     methods: {
@@ -81,6 +92,10 @@ export default {
                     this.$emit("connect-to-peer", { id: args[1] });
                     return `Connecting to ${args[1]}...`;
                 }
+                case "!#disconnect": {
+                    this.$emit("disconnect-peers");
+                    return `Disconnecting...`;
+                }
                 case "!#setname": {
                     if (args.length < 2) return this.assertArgCount(args, 1);
                     const oldName = this.clientAuthor;
@@ -90,8 +105,9 @@ export default {
                         data: JSON.stringify({
                             type: "nameChange",
                             body: {
+                                id: this.clientID,
                                 oldName: oldName,
-                                newName: args[1]
+                                newName: args[1],
                             }
                     })});
                     return `Changed name from ${oldName} to ${args[1]}`;
@@ -114,7 +130,7 @@ export default {
                 body: {
                     author: author,
                     badge: badge,
-                    content: content
+                    content: content,
                 }
             })
         },
@@ -152,9 +168,14 @@ export default {
     width: 450px;
 }
 
-.popup-container.focused {
+.popup-container.focused, .popup-container.focused .member-list-container {
     background-color: #282828ee;
     transition-duration: 400ms;
+}
+
+.popup-container.focused .member-list-container {
+    background-color: transparent;
+    visibility: visible;
 }
 
 .popup-container.focused input {
@@ -165,11 +186,31 @@ export default {
 .message-list-container {
     overflow-y: auto;
     overflow-x: hidden;
-    height: calc(100% - 48px);
+    margin-top: 32px;
+    height: calc(100% - 80px);
+}
+
+.member-list-container {
+    position: absolute;
+    overflow: hidden;
+    visibility: hidden;
+    padding: 8px 0px 8px 0px;
+    margin: 0;
+    left: 0;
+    right: 0;
+    height: 16px;
+    border-radius: 4px;
+    background-color: transparent;
+}
+
+.popup-container.focused .member-list-container:hover {
+    background-color: #202020ff;
+    height: 70%;
 }
 
 .popup-container ul {
     padding: 0;
+    list-style-type: none;
 }
 
 .popup-container input {

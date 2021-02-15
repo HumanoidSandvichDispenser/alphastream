@@ -10,7 +10,7 @@
             @keyup.enter="this.$refs.chat.focus()"
         ></iframe>
         <div class="fullscreen"></div>
-        <Chat ref="chat" @broadcast="broadcast($event.data)" @connect-to-peer="connectToPeer($event.id)"/>
+        <Chat ref="chat" :connections="connections" @broadcast="broadcast($event.data)" @connect-to-peer="connectToPeer($event.id)" @disconnect-peers="disconnect()"/>
     </div>
 </template>
 
@@ -53,20 +53,10 @@ export default {
         connectToPeer: function(id, mergeConnections=false, connectBack=true) {
             if (this.connections[id] || id == this.peer.id) return;
 
-            this.connections[id] = this.peer.connect(id);
-            this.connections[id].on("open", () => {
+            this.connections[id] = { peer: this.peer.connect(id) };
+            this.connections[id].peer.on("open", () => {
                 console.log("Connected to " + id);
 
-                const data = JSON.stringify({
-                    type: "message",
-                    body: {
-                        author: "System",
-                        badge: undefined,
-                        content: `${this.$refs.chat.clientAuthor} has joined`,
-                    }
-                });
-                this.connections[id].send(data);
-                
                 if (mergeConnections) {
                     this.broadcast(JSON.stringify({
                         type: "mergeConnections",
@@ -76,10 +66,24 @@ export default {
                 if (connectBack) {
                     this.signalConnectBack(id);
                 }
+                const data = JSON.stringify({
+                    type: "connect",
+                    body: {
+                        id: this.peer.id,
+                        username: this.$refs.chat.clientAuthor,
+                    }
+                });
+                this.connections[id].peer.send(data);
             });
         },
-        configureConnection: function(conn) {
-            conn.on("data")
+        disconnect: function() {
+            this.broadcast(JSON.stringify({
+                type: "disconnect",
+                body: {
+                    id: this.peer.id,
+                }
+            }));
+            this.peer.disconnect();
         },
         signalConnectBack: function(id) {
             this.broadcast(JSON.stringify({
@@ -96,7 +100,7 @@ export default {
             console.log("Broadcasting data");
             Object.keys(this.connections)
                 .filter(x => ids == undefined || ids.includes(x)) // filter if ids is specified
-                .forEach((id) => { this.connections[id].send(data); });
+                .forEach((id) => { this.connections[id].peer.send(data); });
         },
         receive: function(data) {
             data = JSON.parse(data);
@@ -104,7 +108,13 @@ export default {
             if (data.type == "message") {
                 this.$refs.chat.pushMessage(data.body.author, data.body.badge, data.body.content);
                 console.log("received message: " + data.body.content);
-
+            } else if (data.type == "connect") {
+                this.$refs.chat.systemMessage(`${data.body.username} connected`);
+                new Promise(resolve => setTimeout(resolve, 1))
+                    .then(() => { if (this.connections[data.body.id]) this.connections[data.body.id].username = data.body.username });
+            } else if (data.type == "disconnect") {
+                this.$refs.chat.systemMessage(`${this.connections[data.body.id].username} disconnected`);
+                delete this.connections[data.body.id]; // remove connection
             } else if (data.type == "connectBack") {
                 console.log("Received connection and connecting back to " + data.body);
                 this.connectToPeer(data.body, true, false);
@@ -115,6 +125,7 @@ export default {
                 const message = `${data.body.oldName} changed their name to ${data.body.newName}`;
                 console.log(message);
                 this.$refs.chat.systemMessage(message);
+                this.connections[data.body.id].username = data.body.newName;
             }
         }
     },
