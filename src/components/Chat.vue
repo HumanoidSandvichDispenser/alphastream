@@ -1,8 +1,8 @@
 <template>
     <div ref="popupContainer" class="popup-container chat-container">
         <div ref="memberListContainer" class="member-list-container">
-            <ul>
-                <li style="padding: 4px; user-select: none;">&#9662; Members</li>
+            <ul style="margin: 0;">
+                <li style="padding: 4px; user-select: none;">&#9662; Members ({{ Object.keys(connections).length + 1 }})</li>
                 <Member :member="clientAuthor" :badge="clientBadge"/>
                 <Member v-for="(client, id) in connections" :key="id" :member="client.username"/>
             </ul>
@@ -68,7 +68,18 @@ export default {
                 this.systemMessage(message);
             } else if (/\S/.test(text)) {
                 this.pushMessage(this.clientAuthor, this.clientBadge, text);
-                this.$emit("broadcast", { data: this.stringifyMsgData(this.clientAuthor, this.clientBadge, text) })
+                this.$emit("broadcast", {
+                    data: {
+                        type: "message",
+                        sender: this.clientID,
+                        body: {
+                            author: this.clientAuthor,
+                            badge: this.clientBadge,
+                            content: text,
+                            color: this.clientColor,
+                        }
+                    }
+                });
             }
 
             e.target.value = "";
@@ -102,14 +113,14 @@ export default {
                     this.clientAuthor = args[1];
                     localStorage.setItem("username", args[1]);
                     this.$emit("broadcast", {
-                        data: JSON.stringify({
+                        data: {
                             type: "nameChange",
+                            sender: this.clientID,
                             body: {
-                                id: this.clientID,
                                 oldName: oldName,
                                 newName: args[1],
                             }
-                    })});
+                        }});
                     return `Changed name from ${oldName} to ${args[1]}`;
                 }
                 case "!#ping": {

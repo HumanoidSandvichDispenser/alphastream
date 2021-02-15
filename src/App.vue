@@ -1,6 +1,7 @@
 <template>
     <div id="app" @keyup.enter="this.$refs.chat.focus()">
-        <iframe
+        <div id="player"></div>
+        <!--iframe
             class="fullscreen"
             src="https://www.youtube.com/embed/2xHf2uKoAXY?rel=0&autoplay=1"
             frameborder="0"
@@ -8,7 +9,7 @@
             allowfullscreen
             style="z-index: -1"
             @keyup.enter="this.$refs.chat.focus()"
-        ></iframe>
+        ></iframe-->
         <div class="fullscreen"></div>
         <Chat ref="chat" :connections="connections" @broadcast="broadcast($event.data)" @connect-to-peer="connectToPeer($event.id)" @disconnect-peers="disconnect()"/>
     </div>
@@ -32,6 +33,18 @@ export default {
         return {
             peer: {}, // object
             connections: {},
+
+            hostId: undefined,
+            hostSettings: {
+                isLocked: false,
+                canAdminsKick: true,
+                queue: [
+
+                ],
+                admins: [
+
+                ]
+            },
         }
     },
     methods: {
@@ -40,7 +53,7 @@ export default {
         },
         createPeer: function() {
             const id = "ASTREAM_" + this.generateHex(16);
-            this.peer = new Peer(id);
+            this.hostId = this.peer = new Peer(id); // startpage will automatically make you host
 
             this.peer.on("connection", (conn) => {
                 conn.on("data", (data) => {
@@ -53,43 +66,45 @@ export default {
         connectToPeer: function(id, mergeConnections=false, connectBack=true) {
             if (this.connections[id] || id == this.peer.id) return;
 
-            this.connections[id] = { peer: this.peer.connect(id) };
+            this.connections[id] = { peer: this.peer.connect(id, { serialization: "json" }) };
             this.connections[id].peer.on("open", () => {
                 console.log("Connected to " + id);
 
                 if (mergeConnections) {
-                    this.broadcast(JSON.stringify({
+                    this.broadcast({
                         type: "mergeConnections",
                         body: Object.keys(this.connections), // broadcast IDs back so clients can later connect to them
-                    }), [ id ]);
+                        }, [ id ]);
                 }
                 if (connectBack) {
                     this.signalConnectBack(id);
                 }
-                const data = JSON.stringify({
+                const data = {
                     type: "connect",
+                    sender: this.peer.id,
                     body: {
                         id: this.peer.id,
                         username: this.$refs.chat.clientAuthor,
                     }
-                });
+                };
                 this.connections[id].peer.send(data);
             });
         },
         disconnect: function() {
-            this.broadcast(JSON.stringify({
+            this.broadcast({
                 type: "disconnect",
+                sender: this.peer.id,
                 body: {
                     id: this.peer.id,
                 }
-            }));
+            });
             this.peer.disconnect();
         },
         signalConnectBack: function(id) {
-            this.broadcast(JSON.stringify({
+            this.broadcast({
                 type: "connectBack",
-                body: this.peer.id,
-            }), [ id ])
+                sender: this.peer.id,
+                }, [ id ]);
         },
         broadcast: function(data, ids=undefined) {
             if (this.peer.disconnected) {
@@ -103,29 +118,27 @@ export default {
                 .forEach((id) => { this.connections[id].peer.send(data); });
         },
         receive: function(data) {
-            data = JSON.parse(data);
-
             if (data.type == "message") {
                 this.$refs.chat.pushMessage(data.body.author, data.body.badge, data.body.content);
                 console.log("received message: " + data.body.content);
             } else if (data.type == "connect") {
                 this.$refs.chat.systemMessage(`${data.body.username} connected`);
                 new Promise(resolve => setTimeout(resolve, 1))
-                    .then(() => { if (this.connections[data.body.id]) this.connections[data.body.id].username = data.body.username });
+                    .then(() => { if (this.connections[data.sender]) this.connections[data.sender].username = data.body.username });
             } else if (data.type == "disconnect") {
-                this.$refs.chat.systemMessage(`${this.connections[data.body.id].username} disconnected`);
-                delete this.connections[data.body.id]; // remove connection
+                this.$refs.chat.systemMessage(`${this.connections[data.sender].username} disconnected`);
+                delete this.connections[data.sender]; // remove connection
             } else if (data.type == "connectBack") {
-                console.log("Received connection and connecting back to " + data.body);
-                this.connectToPeer(data.body, true, false);
+                console.log("Received connection and connecting back to " + data.sender);
+                this.connectToPeer(data.sender, true, false);
             } else if (data.type == "mergeConnections") {
                 console.log("Merging connection with IDS: " + data.body.join(", "));
-                data.body.forEach((id) => this.connectToPeer(id));
+                data.body.forEach((id) => new Promise(() => { this.connectToPeer(id) }));
             } else if (data.type == "nameChange") {
                 const message = `${data.body.oldName} changed their name to ${data.body.newName}`;
                 console.log(message);
                 this.$refs.chat.systemMessage(message);
-                this.connections[data.body.id].username = data.body.newName;
+                this.connections[data.sender].username = data.body.newName;
             }
         }
     },
