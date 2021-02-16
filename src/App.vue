@@ -11,8 +11,8 @@
             @keyup.enter="this.$refs.chat.focus()"
         ></iframe-->
         <div class="fullscreen"></div>
-        <Chat ref="chat" :connections="connections" :hostID="hostID" @broadcast="broadcast($event.data)"
-            @connect-to-peer="connectToPeer($event.id, undefined, undefined, true)" @disconnect-peers="disconnect()"/>
+        <Chat ref="chat" :connections="connections" :hostID="hostID" @broadcast="onBroadcast($event.data)"
+            @connect-to-peer="connectToPeer($event.id, undefined, undefined, true)" @disconnect-peers="disconnect()" @reconnect="this.peer.reconnect()"/>
     </div>
 </template>
 
@@ -21,6 +21,8 @@ import Peer from "peerjs";
 import Chat from "./components/Chat";
 import sync from "css-animation-sync";
 import Utils from "./utils.js";
+import broadcast from "./broadcast.js";
+import broadcastType from "./broadcastType";
 
 sync("rainbow-text", {graceful: false});
 
@@ -63,7 +65,7 @@ export default {
                 Utils.removeElement(this.waitingFor, conn.peer); // no longer waiting for target to connect back
 
                 conn.on("data", (data) => {
-                    this.receive(data);
+                    broadcast.receive(this, data);
                 });
             });
 
@@ -72,21 +74,27 @@ export default {
         connectToPeer: function(id, mergeConnections=false, connectBack=true, initialConnection=false) {
             if (this.connections[id] || id == this.peer.id) return;
 
+            if (this.peer.disconnected) {
+                this.$refs.chat.systemMessage("You have disconnected. Type !#reconnect to connect back to the PeerServer");
+                return;
+            }
+
             this.connections[id] = { peer: this.peer.connect(id, { serialization: "json" }) };
             this.connections[id].peer.on("open", () => {
                 this.waitingFor.push(id);
                 console.log("Connected to " + id);
 
                 if (initialConnection) { // initialConnection is true if the client is connecting to the ID specified from the command
-                    Utils.waitForPredicate(() => { console.log(this.waitingFor.includes(id)); return !this.waitingFor.includes(id); },
+                    Utils.waitForPredicate(() => { return !this.waitingFor.includes(id); },
                         () => {
+                            console.log("getting host ID...");
                             this.question("getHostID", (answer) => {this.hostID = answer; console.log("answer to question: " + answer)}, [ id ]);
                         }, 1000
                     );
                 }
                 if (mergeConnections) { // sends a connecting client a list of other clients they are connected to (to form a P2P circle)
-                    this.broadcast({
-                        type: "mergeConnections",
+                    broadcast.send(this, {
+                        type: broadcastType.type.mergeConnections,
                         body: Object.keys(this.connections), // broadcast IDs back so clients can later connect to them
                         }, [ id ]);
                 }
@@ -94,7 +102,7 @@ export default {
                     this.signalConnectBack(id);
                 }
                 const data = { // connect message
-                    type: "connect",
+                    type: broadcastType.type.connect,
                     sender: this.peer.id,
                     body: {
                         id: this.peer.id,
@@ -105,97 +113,35 @@ export default {
             });
         },
         disconnect: function() {
-            this.broadcast({
-                type: "disconnect",
+            broadcast.send(this, {
+                type: broadcastType.type.disconnect,
                 sender: this.peer.id,
                 body: {
                     id: this.peer.id,
                 }
             });
-            this.peer.disconnect();
+            Object.keys(this.connections).forEach(id => {
+                if (this.connections[id]) {
+                    this.connections[id].peer.close();
+                }
+            });
+            this.connections = {};
         },
         signalConnectBack: function(id) {
-            this.broadcast({
-                type: "connectBack",
+            broadcast.send(this, {
+                type: broadcastType.type.connectBack,
                 sender: this.peer.id,
                 }, [ id ]);
         },
-        broadcast: function(data, ids=undefined) {
-            if (this.peer.disconnected) {
-                console.log("You have been disconnected and can not broadcast any messages.");
-                return;
-            }
-
-            console.log("Broadcasting data");
-            Object.keys(this.connections)
-                .filter(x => ids == undefined || ids.includes(x)) // filter if ids is specified
-                .forEach((id) => { this.connections[id].peer.send(data); });
+        onBroadcast: function(data) {
+            broadcast.send(this, data);
         },
-        receive: function(data) {
-            if (data.type == "message") {
-                this.$refs.chat.pushMessage(data.body.author, data.body.badge, data.body.content);
-                console.log("received message: " + data.body.content);
-            } else if (data.type == "connect") {
-                this.$refs.chat.systemMessage(`${data.body.username} connected`);
-                new Promise(resolve => setTimeout(resolve, 1))
-                    .then(() => {
-                        if (this.connections[data.sender]) {
-                            this.connections[data.sender].username = data.body.username;
-                            this.connections[data.sender].failedPings = 0;
-                        }
-                    });
-            } else if (data.type == "disconnect") {
-                this.$refs.chat.systemMessage(`${this.connections[data.sender].username} disconnected`);
-                delete this.connections[data.sender]; // remove connection
-            } else if (data.type == "connectBack") {
-                console.log("Received connection and connecting back to " + data.sender);
-                this.connectToPeer(data.sender, true, false);
-            } else if (data.type == "mergeConnections") {
-                console.log("Merging connection with IDS: " + data.body.join(", "));
-                data.body.forEach((id) => new Promise(() => { this.connectToPeer(id) }));
-            } else if (data.type == "nameChange") {
-                const message = `${data.body.oldName} changed their name to ${data.body.newName}`;
-                console.log(message);
-                this.$refs.chat.systemMessage(message);
-                this.connections[data.sender].username = data.body.newName;
-            } else if (data.type == "ping") {
-                const latency = new Date().getTime() - data.body.time;
-                this.broadcast({
-                    type: "pong",
-                    sender: this.peer.id,
-                    body: {
-                        latency: latency
-                    }
-                }, data.sender);
-            } else if (data.type == "pong") {
-                const latency = data.body.latency; // time it took for peers to receive message
-                this.$refs.chat.systemMessage(`${this.connections[data.sender].username}: ${latency} ms`);
-            } else if (data.type == "question") {
-                console.log("received question");
-                this.broadcast({
-                    type: "answer",
-                    sender: this.peer.id,
-                    body: {
-                        question: data.body.question,
-                        questionID: data.body.questionID,
-                        answer: this.answer(data.sender, data.body.question),
-                    },
-                });
-            } else if (data.type == "answer") {
-                if (this.questions[data.body.questionID] == undefined) return;
-                this.questions[data.body.questionID](data.body.answer);
-                delete this.questions[data.body.questionID];
-            } else if (data.type == "kick") {
-                if (data.sender == this.hostID) {
-                    this.$refs.chat.systemMessage(`Host forcefully closed connection to ${this.connections[data.body.id].username} (${data.body.reason})`);
-                    delete this.connections[data.body.id];
-                }
-            }
-        },
+        
         question: function(questionData, task, ids, timeout=undefined, duration=2500) {
+            console.log("asking question");
             const questionID = this.generateHex(32);
-            this.broadcast({
-                type: "question",
+            broadcast.send(this, {
+                type: broadcastType.type.question,
                 sender: this.peer.id,
                 body: {
                     questionID: questionID,
@@ -203,7 +149,6 @@ export default {
                 }
             }, ids);
 
-            console.log("asked question");
             this.questions[questionID] = task;
 
             setTimeout(() => {
@@ -220,8 +165,8 @@ export default {
         },
         kick: function(id, reason) {
             if (this.hostID == this.peer.id) {
-                this.broadcast({
-                    type: "kick",
+                broadcast.send(this, {
+                    type: broadcastType.type.kick,
                     sender: this.peer.id,
                     body: {
                         id: id,

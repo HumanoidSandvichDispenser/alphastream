@@ -20,6 +20,8 @@
 <script>
 import Message from "./Message";
 import Member from "./Member";
+//import broadcast from "../broadcast.js";
+import broadcastType from "../broadcastType";
 
 const localStorage = window.localStorage;
 
@@ -71,7 +73,7 @@ export default {
                 this.pushMessage(this.clientAuthor, this.clientBadge, text);
                 this.$emit("broadcast", {
                     data: {
-                        type: "message",
+                        type: broadcastType.type.message,
                         sender: this.clientID,
                         body: {
                             author: this.clientAuthor,
@@ -108,6 +110,10 @@ export default {
                     this.$emit("disconnect-peers");
                     return `Disconnecting...`;
                 }
+                case "!#reconnect": {
+                    this.$emit("reconnect");
+                    return `Reconnecting...`;
+                }
                 case "!#setname": {
                     if (args.length < 2) return this.assertArgCount(args, 1);
                     const oldName = this.clientAuthor;
@@ -115,7 +121,7 @@ export default {
                     localStorage.setItem("username", args[1]);
                     this.$emit("broadcast", {
                         data: {
-                            type: "nameChange",
+                            type: broadcastType.type.nameChange,
                             sender: this.clientID,
                             body: {
                                 oldName: oldName,
@@ -127,7 +133,7 @@ export default {
                 case "!#ping": {
                     this.$emit("broadcast", {
                         data: {
-                            type: "ping",
+                            type: broadcastType.type.ping,
                             sender: this.clientID,
                             body: {
                                 time: new Date().getTime(),
@@ -144,16 +150,6 @@ export default {
                 default:
                     return `Unknown command ${args[0]}`;
             }
-        },
-        stringifyMsgData: function(author, badge, content) {
-            return JSON.stringify({
-                type: "message",
-                body: {
-                    author: author,
-                    badge: badge,
-                    content: content,
-                }
-            })
         },
         assertArgCount: function(args, length) {
             return `${args[0]} expected ${length} arguments (got ${args.length - 1})`;
