@@ -11,7 +11,8 @@
             @keyup.enter="this.$refs.chat.focus()"
         ></iframe-->
         <div class="fullscreen"></div>
-        <Chat ref="chat" :connections="connections" @broadcast="broadcast($event.data)" @connect-to-peer="connectToPeer($event.id)" @disconnect-peers="disconnect()"/>
+        <Chat ref="chat" :connections="connections" :hostID="hostID" @broadcast="broadcast($event.data)"
+            @connect-to-peer="connectToPeer($event.id, undefined, undefined, true)" @disconnect-peers="disconnect()"/>
     </div>
 </template>
 
@@ -19,6 +20,7 @@
 import Peer from "peerjs";
 import Chat from "./components/Chat";
 import sync from "css-animation-sync";
+import Utils from "./utils.js";
 
 sync("rainbow-text", {graceful: false});
 
@@ -31,10 +33,12 @@ export default {
     },
     data() {
         return {
-            peer: {}, // object
-            connections: {},
+            peer: {}, // Peer object
+            connections: {}, // list of all connections the client has established (includes one-way connections).
+            waitingFor: [], // list of all connections the client is waiting to be connected back by (list of current one-way connections).
+            questions: {},
 
-            hostId: undefined,
+            hostID: undefined,
             hostSettings: {
                 isLocked: false,
                 canAdminsKick: true,
@@ -53,9 +57,11 @@ export default {
         },
         createPeer: function() {
             const id = "ASTREAM_" + this.generateHex(16);
-            this.hostId = this.peer = new Peer(id); // startpage will automatically make you host
+            this.peer = new Peer(id);
 
             this.peer.on("connection", (conn) => {
+                Utils.removeElement(this.waitingFor, conn.peer); // no longer waiting for target to connect back
+
                 conn.on("data", (data) => {
                     this.receive(data);
                 });
@@ -63,23 +69,31 @@ export default {
 
             return id;
         },
-        connectToPeer: function(id, mergeConnections=false, connectBack=true) {
+        connectToPeer: function(id, mergeConnections=false, connectBack=true, initialConnection=false) {
             if (this.connections[id] || id == this.peer.id) return;
 
             this.connections[id] = { peer: this.peer.connect(id, { serialization: "json" }) };
             this.connections[id].peer.on("open", () => {
+                this.waitingFor.push(id);
                 console.log("Connected to " + id);
 
-                if (mergeConnections) {
+                if (initialConnection) { // initialConnection is true if the client is connecting to the ID specified from the command
+                    Utils.waitForPredicate(() => { console.log(this.waitingFor.includes(id)); return !this.waitingFor.includes(id); },
+                        () => {
+                            this.question("getHostID", (answer) => {this.hostID = answer; console.log("answer to question: " + answer)}, [ id ]);
+                        }, 1000
+                    );
+                }
+                if (mergeConnections) { // sends a connecting client a list of other clients they are connected to (to form a P2P circle)
                     this.broadcast({
                         type: "mergeConnections",
                         body: Object.keys(this.connections), // broadcast IDs back so clients can later connect to them
                         }, [ id ]);
                 }
-                if (connectBack) {
+                if (connectBack) { // signals targets to connect back to the client
                     this.signalConnectBack(id);
                 }
-                const data = {
+                const data = { // connect message
                     type: "connect",
                     sender: this.peer.id,
                     body: {
@@ -124,7 +138,12 @@ export default {
             } else if (data.type == "connect") {
                 this.$refs.chat.systemMessage(`${data.body.username} connected`);
                 new Promise(resolve => setTimeout(resolve, 1))
-                    .then(() => { if (this.connections[data.sender]) this.connections[data.sender].username = data.body.username });
+                    .then(() => {
+                        if (this.connections[data.sender]) {
+                            this.connections[data.sender].username = data.body.username;
+                            this.connections[data.sender].failedPings = 0;
+                        }
+                    });
             } else if (data.type == "disconnect") {
                 this.$refs.chat.systemMessage(`${this.connections[data.sender].username} disconnected`);
                 delete this.connections[data.sender]; // remove connection
@@ -151,15 +170,80 @@ export default {
             } else if (data.type == "pong") {
                 const latency = data.body.latency; // time it took for peers to receive message
                 this.$refs.chat.systemMessage(`${this.connections[data.sender].username}: ${latency} ms`);
+            } else if (data.type == "question") {
+                console.log("received question");
+                this.broadcast({
+                    type: "answer",
+                    sender: this.peer.id,
+                    body: {
+                        question: data.body.question,
+                        questionID: data.body.questionID,
+                        answer: this.answer(data.sender, data.body.question),
+                    },
+                });
+            } else if (data.type == "answer") {
+                if (this.questions[data.body.questionID] == undefined) return;
+                this.questions[data.body.questionID](data.body.answer);
+                delete this.questions[data.body.questionID];
+            } else if (data.type == "kick") {
+                if (data.sender == this.hostID) {
+                    this.$refs.chat.systemMessage(`Host forcefully closed connection to ${this.connections[data.body.id].username} (${data.body.reason})`);
+                    delete this.connections[data.body.id];
+                }
             }
+        },
+        question: function(questionData, task, ids, timeout=undefined, duration=2500) {
+            const questionID = this.generateHex(32);
+            this.broadcast({
+                type: "question",
+                sender: this.peer.id,
+                body: {
+                    questionID: questionID,
+                    question: questionData,
+                }
+            }, ids);
+
+            console.log("asked question");
+            this.questions[questionID] = task;
+
+            setTimeout(() => {
+                if (this.questions[questionID] != undefined && timeout != undefined) // question has not been answered
+                    timeout(); // invoke timeout method
+            }, duration);
+        },
+        answer: function(sender, question) {
+            console.log("answering question " + question);
+            switch (question) {
+                case "getHostID": return this.hostID;
+                case "ping": return this.peer.id;
+            }
+        },
+        kick: function(id, reason) {
+            if (this.hostID == this.peer.id) {
+                this.broadcast({
+                    type: "kick",
+                    sender: this.peer.id,
+                    body: {
+                        id: id,
+                        reason: reason,
+                    }
+                })
+            }
+
+            this.$refs.chat.systemMessage(`Host forcefully closed connection to ${this.connections[id].username} (${reason})`);
+            delete this.connections[id];
         }
     },
     mounted() {
         this.$refs.chat.clientID = this.createPeer();
+        this.hostID = this.peer.id;
         console.log("Got ID: " + this.$refs.chat.clientID);
 
         const username = localStorage.username;
         this.$refs.chat.clientAuthor = username ? username : "Alphastreamer";
+
+        Utils.pingClients(this); // start loop to ping clients if host
+        Utils.pingHost(this); // start loop to ping host if client
     },
 };
 </script>

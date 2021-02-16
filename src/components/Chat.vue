@@ -2,9 +2,9 @@
     <div ref="popupContainer" class="popup-container chat-container">
         <div ref="memberListContainer" class="member-list-container">
             <ul style="margin: 0;">
-                <li style="padding: 4px; user-select: none;">&#9662; Members ({{ Object.keys(connections).length + 1 }})</li>
-                <Member :member="clientAuthor" :badge="clientBadge"/>
-                <Member v-for="(client, id) in connections" :key="id" :member="client.username"/>
+                <li style="padding: 4px; user-select: none;">&#9662; Connected users ({{ Object.keys(connections).length }})</li>
+                <Member :member="clientAuthor" :badge="clientBadge" :isHost="hostID == clientID"/>
+                <Member v-for="(client, id) in connections" :key="id" :member="client.username" :isHost="hostID == id"/>
             </ul>
         </div>
         <div ref="messageListContainer" class="message-list-container">
@@ -30,6 +30,7 @@ export default {
     },
     props: {
         connections: {},
+        hostID: String,
     },
     data() {
         return {

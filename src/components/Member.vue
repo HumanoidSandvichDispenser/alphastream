@@ -1,6 +1,6 @@
 <template>
     <li class="member-container">
-        <div class="member"><img v-if="badge != undefined" :src="badge">{{ member }}</div>
+        <div class="member"><img v-if="badge != undefined" :src="badge">{{ member }} {{ isHost ? "(Host)" : "" }}</div>
     </li>
 </template>
 
@@ -9,6 +9,7 @@ export default {
     props: {
         member: String,
         badge: String,
+        isHost: Boolean,
     },
 }
 </script>

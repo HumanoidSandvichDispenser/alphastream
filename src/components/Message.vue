@@ -35,7 +35,7 @@ export default {
         syncAnimations: function() {
             console.log("syncing animations");
         },
-        parseEmotes(message) {
+        parseEmotes: function(message) {
             const words = message.split(" ");
             words.forEach((word, index) => {
                 if (emoteMap.has(word)) {
