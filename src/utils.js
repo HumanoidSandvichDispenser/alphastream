@@ -80,4 +80,25 @@ export default {
 
         return video_id;
     },
+    fetchEmoteMap: function(fetcher, emoteMap, channel) {
+        fetcher.fetchTwitchEmotes(channel).then(() => {
+            emoteMap = new Map([...emoteMap, ...fetcher.emotes]);
+            fetcher.fetchBTTVEmotes(channel).then(() => {
+                emoteMap = new Map([...emoteMap, ...fetcher.emotes]);
+                fetcher.fetchFFZEmotes(channel).then(() => {
+                    emoteMap = new Map([...emoteMap, ...fetcher.emotes]);
+                    console.log(emoteMap);
+                });
+            });
+        });
+        fetcher.fetchTwitchEmotes(channel).then(() => {
+            emoteMap = new Map([...emoteMap, ...fetcher.emotes]);
+            fetcher.fetchBTTVEmotes(channel).then(() => {
+                emoteMap = new Map([...emoteMap, ...fetcher.emotes]);
+                fetcher.fetchFFZEmotes(channel).then(() => {
+                    emoteMap = new Map([...emoteMap, ...fetcher.emotes]);
+                });
+            });
+        });
+    }
 };

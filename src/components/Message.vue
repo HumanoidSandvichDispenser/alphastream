@@ -13,12 +13,22 @@ var emoteMap = new Map();
 
 const fetcher = new EmoteFetcher();
 
+fetcher.fetchTwitchEmotes().then(() => {
+    emoteMap = new Map([...emoteMap, ...fetcher.emotes]);
+    fetcher.fetchBTTVEmotes().then(() => { // fetch emotes in ordere to make sure they are added correctly
+        emoteMap = new Map([...emoteMap, ...fetcher.emotes]);
+        fetcher.fetchFFZEmotes().then(() => {
+            emoteMap = new Map([...emoteMap, ...fetcher.emotes]);
+        });
+    });
+});
+
 fetcher.fetchTwitchEmotes(71092938).then(() => {
-    emoteMap = new Map([...fetcher.emotes]);
+    emoteMap = new Map([...emoteMap, ...fetcher.emotes]);
     fetcher.fetchBTTVEmotes(71092938).then(() => { // fetch emotes in ordere to make sure they are added correctly
-        emoteMap = new Map([...fetcher.emotes]);
+        emoteMap = new Map([...emoteMap, ...fetcher.emotes]);
         fetcher.fetchFFZEmotes(71092938).then(() => {
-            emoteMap = new Map([...fetcher.emotes]);
+            emoteMap = new Map([...emoteMap, ...fetcher.emotes]);
         });
     });
 });
