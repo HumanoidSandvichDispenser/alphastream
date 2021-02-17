@@ -7,8 +7,6 @@ export default {
             return;
         }
 
-        console.log("Broadcasting data");
-        console.log(data);
         Object.keys(app.connections)
             .filter(x => ids == undefined || ids.includes(x)) // filter if ids is specified
             .forEach((id) => { app.connections[id].peer.send(data); });
@@ -65,6 +63,7 @@ export default {
                 },
             });
         } else if (data.type == broadcastType.type.answer) {
+            console.log("received an answer");
             if (app.questions[data.body.questionID] == undefined) return;
             app.questions[data.body.questionID](data.body.answer);
             delete app.questions[data.body.questionID];
@@ -74,6 +73,14 @@ export default {
                 app.connections[data.sender].close();
                 delete app.connections[data.body.id];
             }
+        } else if (data.type == broadcastType.type.addLink) {
+            app.addLink(data.body.link);
+
+            console.log("received request to load video");
+        } else if (data.type == broadcastType.type.videoState) {
+            app.videoState = data.body.videoState;
+            console.log(data.body.videoState);
+            app.changeVideoState();
         }
     },
 };

@@ -11,5 +11,8 @@ export default {
         question: 8,
         answer: 9,
         kick: 10,
+        addLink: 11,
+        videoState: 12,
+        videoTime: 13
     }
 };

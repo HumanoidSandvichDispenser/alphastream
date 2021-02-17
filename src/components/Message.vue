@@ -36,6 +36,9 @@ export default {
             console.log("syncing animations");
         },
         parseEmotes: function(message) {
+            if (message == undefined)
+                return;
+
             const words = message.split(" ");
             words.forEach((word, index) => {
                 if (emoteMap.has(word)) {
@@ -80,7 +83,7 @@ export default {
 }
 
 .message-content {
-    font-weight: 400;
+    font-weight: 600;
 }
 
 .emote {

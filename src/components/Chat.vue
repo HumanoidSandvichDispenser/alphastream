@@ -26,6 +26,7 @@ import broadcastType from "../broadcastType";
 const localStorage = window.localStorage;
 
 export default {
+    name: "Chat",
     components: {
         Message,
         Member
@@ -147,6 +148,31 @@ export default {
                         this.messages.pop();
                     break;
                 }
+                case "!#add": {
+                    if (args.length < 2) return this.assertArgCount(args, 1);
+                    /*
+                    var targets = this.$parent.hostID;
+                    if (this.$parent.hostID == this.clientID) {
+                        targets = undefined;
+                        this.$parent.addLink(args[1]);
+                    }*/
+
+
+                    this.$emit("broadcast", {
+                        data: {
+                            type: broadcastType.type.addLink,
+                            sender: this.clientID,
+                            body: {
+                                link: args[1],
+                            }
+                        }
+                    });
+
+                    this.$parent.addLink(args[1]);
+
+                    console.log("added video " + args[1]);
+                    break;
+                }
                 default:
                     return `Unknown command ${args[0]}`;
             }
@@ -159,10 +185,29 @@ export default {
         const _this = this;
 
         document.onkeyup = function(e) {
+            console.log(e.key);
             if (e.key == "Enter") {
                 _this.focus(_this);
+            } else if (document.activeElement != _this.$refs.messageBox) {
+                if (e.key == " ") {
+                    _this.$parent.videoState.isPaused = !_this.$parent.videoState.isPaused;
+                    _this.$parent.videoState.videoTime = _this.$parent.$refs.youtube.getCurrentTime();
+                    _this.$parent.broadcastVideoState();
+                    _this.$parent.changeVideoState();
+                } else if (e.key == "ArrowLeft") {
+                    _this.$parent.videoState.videoTime = Math.max(_this.$parent.$refs.youtube.getCurrentTime() - 5, 0);
+                    _this.$parent.videoState.forceTimeUpdate = true;
+                    _this.$parent.broadcastVideoState();
+                    _this.$parent.changeVideoState();
+                } else if (e.key == "ArrowRight") {
+                    _this.$parent.videoState.videoTime = Math.min(_this.$parent.$refs.youtube.getCurrentTime() + 5,
+                        _this.$parent.$refs.youtube.getDuration() ?? 0);
+                    _this.$parent.videoState.forceTimeUpdate = true;
+                    _this.$parent.broadcastVideoState();
+                    _this.$parent.changeVideoState();
+                }
             }
-        }
+        } 
     },
 }
 </script>

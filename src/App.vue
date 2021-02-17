@@ -1,6 +1,8 @@
 <template>
     <div id="app" @keyup.enter="this.$refs.chat.focus()">
-        <div id="player"></div>
+        <div class="fullscreen">
+            <YouTube @ready="$refs.youtube.playVideo()" ref="youtube" src="https://www.youtube.com/watch?v=DB6UWGeNePk"></YouTube>
+        </div>
         <!--iframe
             class="fullscreen"
             src="https://www.youtube.com/embed/2xHf2uKoAXY?rel=0&autoplay=1"
@@ -13,16 +15,19 @@
         <div class="fullscreen"></div>
         <Chat ref="chat" :connections="connections" :hostID="hostID" @broadcast="onBroadcast($event.data)"
             @connect-to-peer="connectToPeer($event.id, undefined, undefined, true)" @disconnect-peers="disconnect()" @reconnect="this.peer.reconnect()"/>
+        <MediaController/>
     </div>
 </template>
 
 <script>
 import Peer from "peerjs";
 import Chat from "./components/Chat";
+import MediaController from "./components/MediaController";
 import sync from "css-animation-sync";
 import Utils from "./utils.js";
 import broadcast from "./broadcast.js";
 import broadcastType from "./broadcastType";
+import YouTube from "vue3-youtube";
 
 sync("rainbow-text", {graceful: false});
 
@@ -32,9 +37,13 @@ export default {
     name: "App",
     components: {
         Chat,
+        YouTube,
+        MediaController,
     },
     data() {
         return {
+            document: document,
+
             peer: {}, // Peer object
             connections: {}, // list of all connections the client has established (includes one-way connections).
             waitingFor: [], // list of all connections the client is waiting to be connected back by (list of current one-way connections).
@@ -44,14 +53,24 @@ export default {
             hostSettings: {
                 isLocked: false,
                 canAdminsKick: true,
-                queue: [
+                videoUrl: "https://www.youtube.com/watch?v=DB6UWGeNePk",
+                videoQueue: [
 
                 ],
                 admins: [
 
                 ]
             },
+            videoState: {
+                videoTime: 0,
+                isPaused: false,
+                forceTimeUpdate: false,
+            }
         }
+    },
+    computed: {
+        height: () => document.innerHeight,
+        width: () => document.innerWidth,
     },
     methods: {
         generateHex: function(length) {
@@ -126,6 +145,7 @@ export default {
                 }
             });
             this.connections = {};
+            this.hostID = this.peer.id;
         },
         signalConnectBack: function(id) {
             broadcast.send(this, {
@@ -177,7 +197,42 @@ export default {
 
             this.$refs.chat.systemMessage(`Host forcefully closed connection to ${this.connections[id].username} (${reason})`);
             delete this.connections[id];
-        }
+        },
+        addLink: function(link) {
+            const videoID = Utils.videoUrlToID(link);
+            console.log(videoID);
+            this.$refs.youtube.loadVideoByUrl(`http://www.youtube.com/v/${videoID}?version=3`);
+            //this.videoUrl = link;
+            console.log("adding link " + link);
+        },
+        broadcastVideoState: function() {
+            if (this.hostID == this.peer.id) {
+                broadcast.send(this, {
+                    type: broadcastType.type.videoState,
+                    sender: this.peer.id,
+                    body: {
+                        videoState: this.videoState,
+                    }
+                });
+            }
+        },
+        changeVideoState: function() {
+            if (this.videoState.isPaused) {
+                this.$refs.youtube.pauseVideo();
+            } else {
+                this.$refs.youtube.playVideo();
+            }
+
+            console.log(`${this.$refs.youtube.getCurrentTime()} video time`)
+            if (Math.abs(this.$refs.youtube.getCurrentTime() - this.videoState.videoTime) > 5 ||
+                this.videoState.forceTimeUpdate) { // catch video up if video is at least 5 seconds ahead or behind, or forcing a time update
+                this.videoState.forceTimeUpdate = false;
+                console.log("catching video up");
+                this.$refs.youtube.seekTo(this.videoState.videoTime);
+            }
+        },
+        innerWidth: () => window.innerWidth,
+        innerHeight: () => window.innerHeight
     },
     mounted() {
         this.$refs.chat.clientID = this.createPeer();
@@ -188,7 +243,7 @@ export default {
         this.$refs.chat.clientAuthor = username ? username : "Alphastreamer";
 
         Utils.pingClients(this); // start loop to ping clients if host
-        Utils.pingHost(this); // start loop to ping host if client
+        //Utils.pingHost(this); // start loop to ping host if client
     },
 };
 </script>
@@ -200,18 +255,22 @@ body {
     margin: 0;
 }
 
-.fullscreen {
-    position: fixed;
+.fullscreen, .fullscreen  > * {
+    position: fixed!important;
     top: 0;
     left: 0;
     bottom: 0;
     right: 0;
-    width: 100%;
-    height: 100%;
+    width: 100%!important;
+    height: 100%!important;
     border: none;
     margin: 0;
     padding: 0;
     overflow: hidden;
+}
+
+.ytp-expand-pause-overlay .ytp-pause-overlay {
+    visibility: hidden;
 }
 
 #app {
