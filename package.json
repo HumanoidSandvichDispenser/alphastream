@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@mkody/twitch-emoticons": "^2.3.0",
+    "@vueform/slider": "^1.0.3",
     "arg": "^5.0.0",
     "core-js": "^3.6.5",
     "css-animation-sync": "^0.2.0",

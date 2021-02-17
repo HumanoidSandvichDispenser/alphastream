@@ -220,7 +220,7 @@ export default {
 }
 
 .chat-container {
-    bottom: 48px;
+    bottom: 144px;
     left: 48px;
     float: left;
     vertical-align: bottom;

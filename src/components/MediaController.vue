@@ -1,11 +1,13 @@
 <template>
     <div class="media-controller">
-        <Slider v-model="sliderValue" color="#8ec07c" track-color="#808080" width="100%" step="0" :max="maxValue"/>
+        <div class="slider-container">
+            <Slider v-model="sliderValue" :step="-1" :min="0" :max="maxValue" :format="formatTime" @change="$emit('change', $event)"/>
+        </div>
     </div>
 </template>
 
 <script>
-import Slider from "vue3-slider";
+import Slider from "@vueform/slider";
 
 export default {
     name: "MediaController",
@@ -15,10 +17,38 @@ export default {
     props: {
         value: Number,
         maxValue: Number,
+        sliderVisible: Boolean,
+    },
+    watch: {
+        value: function(newVal) {
+            console.log("value changed to " + newVal);
+            this.sliderValue = newVal;
+        }
     },
     data() {
         return {
             sliderValue: 0,
+        }
+    },
+    methods: {
+        formatTime: function(duration) {
+            const durationNumber = new Number(duration);
+
+            // Hours, minutes and seconds
+            var hrs = ~~(durationNumber / 3600);
+            var mins = ~~((durationNumber % 3600) / 60);
+            var secs = ~~durationNumber % 60;
+
+            // Output like "1:01" or "4:03:59" or "123:03:59"
+            var format = "";
+
+            if (hrs > 0) {
+                format += "" + hrs + ":" + (mins < 10 ? "0" : "");
+            }
+
+            format += "" + mins + ":" + (secs < 10 ? "0" : "");
+            format += "" + secs;
+            return format;
         }
     }
 }
@@ -28,12 +58,15 @@ export default {
 .media-controller {
     position: fixed;
     border-radius: 4px;
-    bottom: 16px;
-    height: 32px;
+    bottom: 48px;
+    left: 48px;
+    right: 48px;
+    height: 48px;
+    background-color: #282828ee;
 }
 
 .slider-container {
-    width: 100%; /* Width of the outside container */
+    margin: 20px 16px 20px 16px;
 }
 
 /* The slider itself */
@@ -64,3 +97,5 @@ export default {
     cursor: pointer; /* Cursor on hover */
 }
 </style>
+
+<style src="@vueform/slider/themes/default.css"></style>

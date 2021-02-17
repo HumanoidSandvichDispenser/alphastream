@@ -1,7 +1,7 @@
 <template>
     <div id="app" @keyup.enter="this.$refs.chat.focus()">
         <div class="fullscreen">
-            <YouTube @ready="$refs.youtube.playVideo()" ref="youtube" src="https://www.youtube.com/watch?v=DB6UWGeNePk"></YouTube>
+            <YouTube @ready="onVideoReady" ref="youtube" src="https://www.youtube.com/watch?v=DB6UWGeNePk"></YouTube>
         </div>
         <!--iframe
             class="fullscreen"
@@ -15,7 +15,7 @@
         <div class="fullscreen"></div>
         <Chat ref="chat" :connections="connections" :hostID="hostID" @broadcast="onBroadcast($event.data)"
             @connect-to-peer="connectToPeer($event.id, undefined, undefined, true)" @disconnect-peers="disconnect()" @reconnect="this.peer.reconnect()"/>
-        <MediaController/>
+        <MediaController :sliderVisible="videoState.isReady" :maxValue="videoState.duration" :value="videoState.actualVideoTime" @change="onTimeChange"/>
     </div>
 </template>
 
@@ -62,15 +62,26 @@ export default {
                 ]
             },
             videoState: {
+                actualVideoTime: 0,
                 videoTime: 0,
+                videoDuration: 1,
                 isPaused: false,
                 forceTimeUpdate: false,
-            }
+                isReady: false,
+            },
         }
     },
     computed: {
         height: () => document.innerHeight,
         width: () => document.innerWidth,
+    },
+    watch: {
+        getDuration: function() {
+            return this.$refs.youtube == undefined ? 1 : this.$refs.youtube.getDuration();
+        },
+        getCurrentTime: function() {
+            return this.$refs.youtube == undefined ? 0 : this.$refs.youtube.getCurrentTime();
+        },
     },
     methods: {
         generateHex: function(length) {
@@ -231,8 +242,23 @@ export default {
                 this.$refs.youtube.seekTo(this.videoState.videoTime);
             }
         },
-        innerWidth: () => window.innerWidth,
-        innerHeight: () => window.innerHeight
+        onVideoReady: function() {
+            this.$refs.youtube.playVideo();
+            this.videoState.isReady = true;
+            this.videoState.duration = this.$refs.youtube.getDuration();
+        },
+        updateVideoTime: function() {
+            setTimeout(this.updateVideoTime, 20, this.updateVideoTime);
+            
+            if (this.$refs.youtube == undefined || this.videoState.isPaused) return;
+
+            this.videoState.actualVideoTime = this.$refs.youtube.getCurrentTime();
+        },
+        onTimeChange: function(e) {
+            this.videoState.actualVideoTime = this.videoState.videoTime = e;
+            this.changeVideoState();
+            this.broadcastVideoState();
+        },
     },
     mounted() {
         this.$refs.chat.clientID = this.createPeer();
@@ -243,6 +269,7 @@ export default {
         this.$refs.chat.clientAuthor = username ? username : "Alphastreamer";
 
         Utils.pingClients(this); // start loop to ping clients if host
+        this.updateVideoTime();
         //Utils.pingHost(this); // start loop to ping host if client
     },
 };
