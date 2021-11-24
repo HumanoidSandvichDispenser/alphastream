@@ -25,6 +25,8 @@ export default class Chat extends Vue {
 .chat-message {
     display: inline-block;
     text-align: left;
+    font-size: 16px;
+    min-height: 32px;
 }
 
 .chat-message img {

@@ -14,24 +14,14 @@ import Message from './message';
 })
 export default class App extends Vue {
     messages: Array<Message> = [];
-
-    created(): void {
-        this.messages.push(new Message("xQcOW", "bruhhh these litty memes lmfaooo 😂😂"));
-        this.messages.push(new Message("forsen", "I HECKIN LOVE AMONG US!!!"));
-        this.messages.push(new Message("gawr gura", "Good fucking morning Bajs <img src=\"https://static-cdn.jtvnw.net/emoticons/v2/521050/static/light/3.0\" width=\"28\"> not forsen btw Copesen"));
-        this.messages.push(new Message("forsen", "I HECKIN LOVE AMONG US!!!"));
-        this.messages.push(new Message("forsen", "I HECKIN LOVE AMONG US!!!"));
-        this.messages.push(new Message("forsen", "I HECKIN LOVE AMONG US!!!"));
-        this.messages.push(new Message("forsen", "I HECKIN LOVE AMONG US!!!"));
-    }
 }
 </script>
 
 <style>
 :root {
     --foreground: white;
-    --background: #212121;
-    --popup-background: #ddddddaa;
+    --background: black;
+    --popup-background: #282828aa;
 }
 
 body {
