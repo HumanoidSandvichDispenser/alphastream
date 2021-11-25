@@ -8,8 +8,3 @@ export default class Message {
         this.content = content;
     }
 }
-//wake me up
-//wake me up inside
-//wake me up inside 
-//>be me
-//>wtf am i 
