@@ -46,7 +46,7 @@ export default class EmoteFetcher {
                     this.spreadBTTVEmotes(response.data.channelEmotes);
                 }
                 if ('sharedEmotes' in response.data) {
-                    this.spreadBTTVEmotes(response.data.sharedEmotes)
+                    this.spreadBTTVEmotes(response.data.sharedEmotes);
                 }
             }
         });
@@ -67,10 +67,6 @@ export default class EmoteFetcher {
      * Adds a given list of BTTV emotes to `this.emotes`
      */
     private spreadBTTVEmotes(emotes: Array<BTTVEmote>): void {
-        if (!(emotes instanceof Array)) {
-            return;
-        }
-
         emotes.forEach((emote: BTTVEmote) => {
             const url = `https://cdn.betterttv.net/emote/${emote.id}/1x`;
             this.emotes[emote.code] = url;
@@ -81,10 +77,6 @@ export default class EmoteFetcher {
      * Adds a given list of FFZ emotes to `this.emotes`
      */
     private spreadFFZEmotes(emotes: Array<FFZEmote>): void {
-        if (!(emotes instanceof Array)) {
-            return;
-        }
-
         emotes.forEach((emote: FFZEmote) => {
             this.emotes[emote.name] = emote.urls[1];
         });
