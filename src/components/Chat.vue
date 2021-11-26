@@ -5,7 +5,7 @@
             </chat-message>
         </div>
         <div>
-            <input type="text" @keydown="chatboxKeydown" placeholder="Type to chat...">
+            <input type="text" @keydown="chatboxKeydown" :placeholder="'Send message as ' + username">
         </div>
     </div>
 </template>
@@ -23,6 +23,11 @@ import ChatMessage from '@/components/ChatMessage.vue';
     components: {
         ChatMessage
     },
+    computed: {
+        username(): string {
+            return this.$store.state.cvar.user.username.value;
+        }
+    },
 })
 
 export default class Chat extends Vue {
@@ -31,16 +36,31 @@ export default class Chat extends Vue {
 
     created(): void {
         this.$store.state.emoteFetcher.fetchBTTV();
-        this.$store.state.emoteFetcher.fetchEmotes(22484632);
-        this.$store.state.emoteFetcher.fetchEmotes(71092938);
+        this.$store.state.emoteFetcher.fetchEmotes(71092938); // xQcOW
+        this.$store.state.emoteFetcher.fetchEmotes(22484632); // forsen
     }
 
+    /**
+     * Fired whenever a key is depressed on the chatbox
+     */
     chatboxKeydown($event: KeyboardEvent): void {
         if ($event.key == 'Enter') {
             let element = $event.target as HTMLInputElement;
             if (element.value && element.value != '') {
                 let message = this.insertEmotes(this.escapeHTML(element.value));
-                this.messages.push(new Message('pyrofromcsgo', message));
+                if (message.startsWith('$')) {
+                    // TODO: Add commands
+                    // This is just temporary.
+                    let newUsername = message.substring(1); // gets the message after the '$'
+                    this.$store.commit('SET_CVAR', {
+                        cvar: 'username',
+                        group: 'user',
+                        value: newUsername
+                    });
+                } else {
+                    let username: string = this.$store.state.cvar.user.username.value;
+                    this.messages.push(new Message(username, message));
+                }
                 element.value = ''; // clear textbox
             }
         }
