@@ -25,11 +25,10 @@ import ChatMessage from '@/components/ChatMessage.vue';
     },
     computed: {
         username(): string {
-            return this.$store.state.cvar.user.username.value;
+            return this.$store.state.user.username;
         }
     },
 })
-
 export default class Chat extends Vue {
     messages!: Array<Message>
     messageHistory: Array<string> = [];
@@ -52,13 +51,9 @@ export default class Chat extends Vue {
                     // TODO: Add commands
                     // This is just temporary.
                     let newUsername = message.substring(1); // gets the message after the '$'
-                    this.$store.commit('SET_CVAR', {
-                        cvar: 'username',
-                        group: 'user',
-                        value: newUsername
-                    });
+                    this.$store.commit('SET_USERNAME', newUsername);
                 } else {
-                    let username: string = this.$store.state.cvar.user.username.value;
+                    let username: string = this.$store.state.user.username;
                     this.messages.push(new Message(username, message));
                 }
                 element.value = ''; // clear textbox

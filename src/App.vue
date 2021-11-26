@@ -1,15 +1,18 @@
 <template>
+    <settings/>
     <chat :messages="messages"/>
 </template>
 
 <script lang="ts">
 import { Options, Vue } from 'vue-class-component';
-import Chat from './components/Chat.vue';
-import Message from './message';
+import Chat from '@/components/Chat.vue';
+import Settings from '@/components/Settings.vue'
+import Message from '@/message';
 
 @Options({
     components: {
         Chat,
+        Settings
     },
 })
 export default class App extends Vue {

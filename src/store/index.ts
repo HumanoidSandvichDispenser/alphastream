@@ -1,7 +1,7 @@
 import Vuex, { StoreOptions } from 'vuex';
 import EmoteFetcher from '@/emote-fetcher';
 import { IRootState } from './types';
-import { cvar } from './cvars/index';
+import { user } from './user/index';
 
 const store: StoreOptions<IRootState> = {
     state: {
@@ -14,7 +14,7 @@ const store: StoreOptions<IRootState> = {
 
     },
     modules: {
-        cvar
+        user
     }
 }
 
