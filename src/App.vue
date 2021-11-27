@@ -17,6 +17,11 @@ import Message from '@/message';
 })
 export default class App extends Vue {
     messages: Array<Message> = [];
+
+    public beforeCreate(): void {
+        // this loads the settings from localStorage into the store
+        this.$store.commit('INITIALIZE_USER_STORE');
+    }
 }
 </script>
 

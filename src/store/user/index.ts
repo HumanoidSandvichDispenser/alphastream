@@ -4,8 +4,10 @@ import { IUserState } from './types';
 import { mutations } from './mutations';
 
 const state: IUserState = {
+    peer: null,
     username: 'Alphastreamer',
-    usernameColor: '#FFFFFF'
+    usernameColor: '#FFFFFF',
+    preferredPeerID: '',
 };
 
 export const user: Module<IUserState, IRootState> = {

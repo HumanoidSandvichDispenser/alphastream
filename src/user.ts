@@ -1,9 +1,14 @@
-export default class User {
-    public peer;
+import { IUserState } from '@/store/user/types';
+import Peer from 'peerjs';
 
-    public color = "red";
+export default class User implements IUserState {
+    public peer: Peer;
 
-    public name = "Alphastreamer";
+    public usernameColor: string;
+
+    public username: string;
+
+    public preferredPeerID: string;
 
     constructor() {
         return;
