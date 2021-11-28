@@ -1,23 +1,21 @@
 <template>
-    <settings/>
-    <chat :messages="messages"/>
+    <div id="nav">
+        <!--router-link to="/">Watch</router-link-->
+        <router-link to="/settings">Settings</router-link>
+    </div>
+    <router-view/>
 </template>
 
 <script lang="ts">
 import { Options, Vue } from 'vue-class-component';
-import Chat from '@/components/Chat.vue';
-import Settings from '@/components/Settings.vue'
-import Message from '@/message';
+import Settings from '@/views/Settings.vue';
 
 @Options({
     components: {
-        Chat,
         Settings
     },
 })
 export default class App extends Vue {
-    messages: Array<Message> = [];
-
     public beforeCreate(): void {
         // this loads the settings from localStorage into the store
         this.$store.commit('INITIALIZE_USER_STORE');

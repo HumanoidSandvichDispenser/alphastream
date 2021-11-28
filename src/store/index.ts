@@ -1,59 +1,25 @@
-import Vuex, { StoreOptions } from 'vuex';
+import { createStore, StoreOptions } from 'vuex';
 import EmoteFetcher from '@/emote-fetcher';
 import { IRootState } from './types';
 import { user } from './user/index';
+import Message from '@/message';
 
-const store: StoreOptions<IRootState> = {
+export default createStore({
     state: {
         emoteFetcher: new EmoteFetcher(),
+        messages: []
     },
     mutations: {
-
+        PUSH_MESSAGE(state: IRootState, message: Message) {
+            state.messages.push(message);
+        },
+        CONCAT_MESSAGES(state: IRootState, messages: Array<Message>) {
+            state.messages.concat(messages);
+        }
     },
     actions: {
-
     },
     modules: {
         user
     }
-}
-
-export default new Vuex.Store<IRootState>(store);
-
-/*
-//import { createStore } from 'vuex';
-//import Vue from 'vue';
-export default createStore({
-    state: {
-        emoteFetcher: new EmoteFetcher(),
-        settings: {
-            client: {
-                muted: false,
-                volume: 1,
-                resolution: 1, 
-            },
-            server: {
-               linkQueue: [
-
-               ],
-               members: [
-                  
-               ],
-               videoProgress: 0,
-            },
-            user: {
-                name: "",
-                color: "",
-            }
-        }
-    },
-    mutations: {
-    },
-    actions: {
-
-    },
-    modules: {
-
-    }
-})
-*/
+} as StoreOptions<IRootState>);

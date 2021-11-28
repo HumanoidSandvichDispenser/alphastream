@@ -25,7 +25,7 @@ import ChatMessage from '@/components/ChatMessage.vue';
     },
     computed: {
         username(): string {
-            return this.$store.state.user.username;
+            return this.$store.state.user.preferences.username;
         }
     },
 })
@@ -34,7 +34,7 @@ export default class Chat extends Vue {
     messageHistory: Array<string> = [];
 
     created(): void {
-        this.$store.state.emoteFetcher.fetchBTTV();
+        this.$store.state.emoteFetcher.fetchBTTV(); // fetch global BTTV emotes
         this.$store.state.emoteFetcher.fetchEmotes(71092938); // xQcOW
         this.$store.state.emoteFetcher.fetchEmotes(22484632); // forsen
     }
@@ -53,7 +53,7 @@ export default class Chat extends Vue {
                     let newUsername = message.substring(1); // gets the message after the '$'
                     this.$store.commit('SET_USERNAME', newUsername);
                 } else {
-                    let username: string = this.$store.state.user.username;
+                    let username: string = this.$store.state.user.preferences.username;
                     this.messages.push(new Message(username, message));
                 }
                 element.value = ''; // clear textbox

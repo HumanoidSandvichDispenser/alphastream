@@ -1,16 +1,12 @@
-import { IUserState } from '@/store/user/types';
-import Peer from 'peerjs';
+import { IUserPreferences, IUserState } from '@/store/user/types';
+import Peer, { DataConnection } from 'peerjs';
 
 export default class User implements IUserState {
     public peer: Peer;
 
-    public usernameColor: string;
+    public isHost: boolean;
 
-    public username: string;
+    public connections: Array<DataConnection>;
 
-    public preferredPeerID: string;
-
-    constructor() {
-        return;
-    }
+    public preferences: IUserPreferences;
 }
