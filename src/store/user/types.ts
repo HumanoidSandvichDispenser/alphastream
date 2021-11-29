@@ -1,18 +1,30 @@
+import { IUserInfo } from '@/user';
 import Peer, { DataConnection } from 'peerjs';
 
+export enum DataPayloadType {
+    Invalid,
+    ConnectBack,
+    ChatMessage
+}
+
+export interface IDataConnectBack extends IDataPayload {
+    type: DataPayloadType.ConnectBack;
+    ids: Array<string>;
+}
+
+export interface IDataChatMessage extends IDataPayload {
+    type: DataPayloadType.ChatMessage;
+    message: string;
+}
+
 export interface IDataPayload {
+    type: DataPayloadType,
     recepient: DataConnection;
-    data: unknown;
 }
 
 export interface IUserState {
+    info: IUserInfo;
     peer: Peer;
     connections: { [id: string]: DataConnection };
-    preferences: IUserPreferences;
-}
-
-export interface IUserPreferences {
-    username: string;
-    usernameColor: string;
-    preferredPeerID: string;
+    isHost: boolean;
 }

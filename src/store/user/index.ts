@@ -7,11 +7,12 @@ import { actions } from './actions';
 const state: IUserState = {
     peer: null,
     connections: { },
-    preferences: {
-        username: 'Alphastreamer',
-        usernameColor: '#FFFFFF',
-        preferredPeerID: '',
-    }
+    info: {
+        username: '',
+        usernameColor: '',
+        preferredPeerID: ''
+    },
+    isHost: false
 };
 
 export const user: Module<IUserState, IRootState> = {

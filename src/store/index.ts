@@ -2,6 +2,7 @@ import { createStore, StoreOptions } from 'vuex';
 import EmoteFetcher from '@/emote-fetcher';
 import { IRootState } from './types';
 import { user } from './user/index';
+import { preferences } from './preferences';
 import Message from '@/message';
 
 export default createStore({
@@ -20,6 +21,7 @@ export default createStore({
     actions: {
     },
     modules: {
-        user
+        user,
+        preferences
     }
 } as StoreOptions<IRootState>);

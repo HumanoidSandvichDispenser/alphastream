@@ -14,6 +14,7 @@
 import Message from '@/message';
 import { Options, Vue } from 'vue-class-component';
 import ChatMessage from '@/components/ChatMessage.vue';
+import { DataPayloadType, IDataChatMessage } from '@/store/user/types';
 //const { BTTVEmote, Collection, EmoteFetcher } = require("@mkody/twitch-emoticons");
 
 @Options({
@@ -25,7 +26,7 @@ import ChatMessage from '@/components/ChatMessage.vue';
     },
     computed: {
         username(): string {
-            return this.$store.state.user.preferences.username;
+            return this.$store.state.user.info.username;
         }
     },
 })
@@ -53,8 +54,14 @@ export default class Chat extends Vue {
                     let newUsername = message.substring(1); // gets the message after the '$'
                     this.$store.commit('SET_USERNAME', newUsername);
                 } else {
-                    let username: string = this.$store.state.user.preferences.username;
+                    let username: string = this.$store.state.user.info.username;
                     this.messages.push(new Message(username, message));
+                    const messagePayload: IDataChatMessage = {
+                        recepient: undefined,
+                        type: DataPayloadType.ChatMessage,
+                        message: message,
+                    }
+                    this.$store.dispatch('SEND_MESSAGE', messagePayload);
                 }
                 element.value = ''; // clear textbox
             }

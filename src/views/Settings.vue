@@ -28,12 +28,8 @@ import { Options, Vue } from 'vue-class-component';
 @Options({
 })
 export default class Settings extends Vue {
-    public created(): void {
-        this.$store.dispatch('INITIALIZE_PEER');
-    }
-
     public get username(): string {
-        return this.$store.state.user.preferences.username;
+        return this.$store.state.preferences.username;
     }
 
     public set username(name: string) {
@@ -41,7 +37,7 @@ export default class Settings extends Vue {
     }
 
     public get preferredPeerID(): string {
-        return this.$store.state.user.preferredPeerID;
+        return this.$store.state.preferences.preferredPeerID;
     }
 
     public set preferredPeerID(id: string) {
@@ -68,9 +64,15 @@ export default class Settings extends Vue {
         this.$router.go(-1);
     }
 
+    public data(): Record<string, unknown> {
+        return {
+            targetPeerID: ''
+        }
+    }
+
     /*
      * The PeerID of the user you would like to connect to.
      */
-    public targetPeerID: string;
+    //public targetPeerID: string;
 }
 </script>
