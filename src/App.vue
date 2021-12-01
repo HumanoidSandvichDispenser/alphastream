@@ -20,11 +20,10 @@ export default class App extends Vue {
     public beforeCreate(): void {
         // this loads the settings from localStorage into the store
         this.$store.commit('INITIALIZE_USER_STORE');
-        this.$store.commit('SET_INFO', this.$store.state.preferences);
 
         // TODO: make a button that does this and another button that deletes
         // the peer object (disconnects and stops receiving connections)
-        this.$store.dispatch('INITIALIZE_PEER');
+        //this.$store.dispatch('INITIALIZE_PEER');
     }
 }
 </script>

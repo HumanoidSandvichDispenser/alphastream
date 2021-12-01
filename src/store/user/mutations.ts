@@ -14,11 +14,16 @@ export const mutations: MutationTree<IUserState> = {
         state.peer = new Peer(preferredPeerID);
         console.log('Your Peer ID: ' + state.peer.id);
     },
+    DESTROY_PEER_OBJECT(state: IUserState) {
+        state.peer.destroy();
+        state.peer = undefined;
+    },
     ADD_CONNECTION(state: IUserState, connection: DataConnection) {
         state.connections[connection.peer] = connection;
     },
     SET_INFO(state: IUserState, info: IUserInfo) {
         console.log(info);
-        state.info = info;
+        //state.info = info;
+        Object.assign(state.info, info);
     }
 }

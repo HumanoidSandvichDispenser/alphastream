@@ -3,8 +3,12 @@
         <div class="settings-section">
             <h1>Connect</h1>
             <div>
-                Your peer ID: {{ peerID }}
+                {{ realUsername }} (ID: {{ peerID }})
             </div>
+            <div>
+            </div>
+                <button @click="enablePeer">Enable Peer</button>
+                <button @click="$store.commit('DESTROY_PEER_OBJECT')">Disable Peer</button>
             <div>
                 <input type="text" v-model="targetPeerID" placeholder="Peer ID">
                 <button @click="$store.dispatch('CONNECT_TO_PEER', targetPeerID)">Connect</button>
@@ -14,10 +18,9 @@
         <div class="settings-section">
             <h1>Settings</h1>
             <h2>Peer</h2>
-            <i>You must reconnect your Peer for changes to take effect.</i>
+            <i v-if="$store.state.user.peer">You must re-enable your Peer for the settings below to take effect.</i>
             <div>
-                <!-- Don't use v-model for this so username doesn't update every time the user enters a key. -->
-                <input type="text" :value="username" @blur="blurUsernameTextbox" placeholder="Username">
+                <input type="text" v-model="preferredUsername" placeholder="Username">
             </div>
             <div>
                 <input type="text" v-model="preferredPeerID" placeholder="Preferred Peer ID">
@@ -36,11 +39,11 @@ import { Options, Vue } from 'vue-class-component';
 @Options({
 })
 export default class Settings extends Vue {
-    public get username(): string {
+    public get preferredUsername(): string {
         return this.$store.state.preferences.username;
     }
 
-    public set username(name: string) {
+    public set preferredUsername(name: string) {
         this.$store.commit('SET_USERNAME', name);
     }
 
@@ -52,16 +55,18 @@ export default class Settings extends Vue {
         this.$store.commit('SET_PREFERRED_PEER_ID', id);
     }
 
+    public get realUsername(): string {
+        if (this.$store.state.user.peer) {
+            return this.$store.state.user.info.username;
+        }
+        return 'Unconnected';
+    }
+
     public get peerID(): string {
         if (this.$store.state.user.peer) {
             return this.$store.state.user.peer.id;
         }
-        return 'No Peer ID given yet';
-    }
-
-    public blurUsernameTextbox($event: FocusEvent): void {
-        let textbox = $event.target as HTMLInputElement;
-        this.username = textbox.value;
+        return 'no peer id';
     }
 
     public saveSettings(): void {
@@ -70,6 +75,11 @@ export default class Settings extends Vue {
 
     public goBack(): void {
         this.$router.go(-1);
+    }
+
+    public enablePeer(): void {
+        this.$store.commit('SET_INFO', this.$store.state.preferences);
+        this.$store.dispatch('INITIALIZE_PEER');
     }
 
     public data(): Record<string, unknown> {
