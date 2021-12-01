@@ -1,17 +1,17 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
-import Index from '@/views/Index.vue';
+import Watch from '@/views/Watch.vue';
 import Settings from '@/views/Settings.vue';
 
 const routes: RouteRecordRaw[] = [
     {
         path: '/',
-        name: '',
-        component: Index
+        name: 'Settings',
+        component: Settings
     },
     {
-        path: '/settings',
-        name: 'About',
-        component: Settings
+        path: '/watch',
+        name: 'Watch',
+        component: Watch
     },
 ]
 

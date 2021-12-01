@@ -1,7 +1,8 @@
 <template>
     <div id="nav">
         <!--router-link to="/">Watch</router-link-->
-        <router-link to="/settings">Settings</router-link>
+        <router-link to="/">Settings</router-link>
+        <router-link to="/watch">Watch</router-link>
     </div>
     <router-view/>
 </template>
@@ -20,6 +21,9 @@ export default class App extends Vue {
         // this loads the settings from localStorage into the store
         this.$store.commit('INITIALIZE_USER_STORE');
         this.$store.commit('SET_INFO', this.$store.state.preferences);
+
+        // TODO: make a button that does this and another button that deletes
+        // the peer object (disconnects and stops receiving connections)
         this.$store.dispatch('INITIALIZE_PEER');
     }
 }
@@ -29,7 +33,10 @@ export default class App extends Vue {
 :root {
     --foreground: white;
     --background: black;
+    --popup-foreground: white;
     --popup-background: #282828aa;
+    --neutral: #a4a0a0;
+    --accent: #40dd8b;
 }
 
 body {

@@ -14,7 +14,7 @@ import Message from '@/message';
         Chat
     },
 })
-export default class App extends Vue {
+export default class Watch extends Vue {
     public get messages(): Array<Message> {
         return this.$store.state.messages;
     }
