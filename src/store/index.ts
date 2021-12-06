@@ -16,7 +16,7 @@ export default createStore({
         },
         CONCAT_MESSAGES(state: IRootState, messages: Array<Message>) {
             state.messages.concat(messages);
-        }
+        },
     },
     actions: {
     },

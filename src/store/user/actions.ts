@@ -31,28 +31,46 @@ export const actions: ActionTree<IUserState, IRootState> = {
         });
     },
     CONNECT_TO_PEER(context: ActionContext<IUserState, IRootState>, id: string) {
+        if (context.state.peer == undefined) {
+            console.log('Peer is not connected.');
+            return;
+        }
+
         if (context.state.connections[id] !== undefined) {
             console.log('We are already connected to this peer. Skipping...');
             return; // we are already connected to this peer!
         }
 
         const connection = context.state.peer.connect(id, {
+            // include data such as username and username color
             metadata: {
                 info: context.state.info
-            }
+            },
+            serialization: 'json'
         });
+
         console.log('Attempting to connect to ' + id);
 
         if (connection) {
             connection.on('open', () => {
+                // we are connected to the host
+                // add to the list of active connections
                 context.state.connections[id] = connection;
                 console.log('Connected to ' + id);
                 // TODO: implement
             });
             connection.on('close', () => {
+                // we disconnected
+                // remove from active connections
                 delete context.state.connections[connection.peer];
             });
+            connection.on('error', (err) => {
+                // log the error in the chatbox
+                context.commit('PUSH_MESSAGE',
+                    new Message('System', String(err)));
+            });
         } else {
+            // peer can't connect for some reason
             context.commit('PUSH_MESSAGE', new Message('System', 'Unable to connect to host.'));
         }
     },

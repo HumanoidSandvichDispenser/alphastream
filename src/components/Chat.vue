@@ -5,7 +5,9 @@
             </chat-message>
         </div>
         <div>
-            <input type="text" @keydown="chatboxKeydown" :placeholder="'Send message as ' + username">
+            <input v-if="$store.state.user.isConnected" type="text"
+                @keydown="chatboxKeydown" :placeholder="'Send message as ' + username">
+            <input v-else disabled placeholder="Connect to a Peer Server to chat">
         </div>
     </div>
 </template>
@@ -26,7 +28,10 @@ import { DataPayloadType, IDataChatMessage } from '@/store/user/types';
     },
     computed: {
         username(): string {
-            return this.$store.state.user.info.username;
+            if (this.$store.state.user.isConnected) {
+                return this.$store.state.user.info.username;
+            }
+            return '(unconnected)';
         }
     },
 })
@@ -47,22 +52,24 @@ export default class Chat extends Vue {
         if ($event.key == 'Enter') {
             let element = $event.target as HTMLInputElement;
             if (element.value && element.value != '') {
-                let message = this.insertEmotes(this.escapeHTML(element.value));
-                if (message.startsWith('$')) {
-                    // TODO: Add commands
-                    // This is just temporary.
-                    let newUsername = message.substring(1); // gets the message after the '$'
-                    this.$store.commit('SET_USERNAME', newUsername);
-                } else {
-                    let username: string = this.$store.state.user.info.username;
-                    this.messages.push(new Message(username, message));
-                    const messagePayload: IDataChatMessage = {
-                        recepient: undefined,
-                        type: DataPayloadType.ChatMessage,
-                        message: message,
-                    }
-                    this.$store.dispatch('SEND_MESSAGE', messagePayload);
+                let message = this.escapeHTML(element.value);
+                if (this.$store.state.preferences.showEmotes) {
+                    // insert emotes if we allow it from our user preferences
+                    message = this.insertEmotes(message);
                 }
+
+                let username: string = this.$store.state.user.info.username;
+
+                this.$store.commit('PUSH_MESSAGE', new Message(username, message));
+
+                const messagePayload: IDataChatMessage = {
+                    recepient: undefined,
+                    type: DataPayloadType.ChatMessage,
+                    message: message,
+                }
+                // this only broadcasts the message to other peers
+                this.$store.dispatch('SEND_MESSAGE', messagePayload);
+
                 element.value = ''; // clear textbox
             }
         }
@@ -102,6 +109,8 @@ export default class Chat extends Vue {
     background-color: var(--popup-background);
     border-radius: 8px;
     bottom: 16px;
+    /*left: 16px;*/
+    margin-left: 16px;
     padding: 16px;
 }
 

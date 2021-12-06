@@ -11,7 +11,10 @@
                 <button @click="$store.commit('DESTROY_PEER_OBJECT')">Disable Peer</button>
             <div>
                 <input type="text" v-model="targetPeerID" placeholder="Peer ID">
-                <button @click="$store.dispatch('CONNECT_TO_PEER', targetPeerID)">Connect</button>
+                <button :disabled="!$store.state.user.isConnected"
+                    @click="$store.dispatch('CONNECT_TO_PEER', targetPeerID)">
+                    Connect
+                </button>
             </div>
         </div>
         <div class="line-separator"/>
@@ -24,6 +27,11 @@
             </div>
             <div>
                 <input type="text" v-model="preferredPeerID" placeholder="Preferred Peer ID">
+            </div>
+            <h2>Client</h2>
+            <div>
+                <input type="checkbox" v-model="showEmotes">
+                <label>Show Emotes</label>
             </div>
             <div>
                 <button @click="saveSettings">Save Settings</button>
@@ -86,6 +94,14 @@ export default class Settings extends Vue {
         return {
             targetPeerID: ''
         }
+    }
+
+    public get showEmotes(): boolean {
+        return this.$store.state.preferences.showEmotes;
+    }
+
+    public set showEmotes(value: boolean) {
+        this.$store.commit('SET_SHOW_EMOTES', value);
     }
 
     /*

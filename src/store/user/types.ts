@@ -27,4 +27,5 @@ export interface IUserState {
     peer: Peer;
     connections: { [id: string]: DataConnection };
     isHost: boolean;
+    isConnected: boolean;
 }

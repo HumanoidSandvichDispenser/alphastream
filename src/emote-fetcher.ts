@@ -26,6 +26,13 @@ export default class EmoteFetcher {
     }
 
     /**
+     * Clears the emote list
+     */
+    public clearEmotes(): void {
+        this.emotes = { };
+    }
+
+    /**
      * Fetches BTTV emotes and spreads them to `this.emotes`
      */
     public fetchBTTV(channel_id: number = undefined): void {

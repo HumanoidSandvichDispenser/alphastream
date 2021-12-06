@@ -10,9 +10,17 @@ const state: IUserState = {
     info: {
         username: '',
         usernameColor: '',
-        preferredPeerID: ''
+        preferredPeerID: '',
+        showEmotes: true,
+        emoteList: [ ]
     },
-    isHost: false
+    isHost: false,
+    get isConnected(): boolean {
+        if (this.peer) {
+            return !this.peer.disconnected;
+        }
+        return false;
+    }
 };
 
 export const user: Module<IUserState, IRootState> = {
